@@ -1,4 +1,4 @@
-compiler    := gcc
+compiler    := arm-linux-gnueabihf-gcc
 extra_flags :=
 use_neon    := 0
 release	    := release
