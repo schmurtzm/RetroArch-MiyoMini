@@ -52,8 +52,13 @@
 #define unlikely(x) __builtin_expect(!!(x), 0)
 
 #if defined(MIYOO)
+#if defined(MIYOOMINI)
+#define SDL_RS90_WIDTH  640
+#define SDL_RS90_HEIGHT 480
+#else
 #define SDL_RS90_WIDTH  320
 #define SDL_RS90_HEIGHT 240
+#endif
 #else
 #define SDL_RS90_WIDTH  240
 #define SDL_RS90_HEIGHT 160
@@ -1051,6 +1056,15 @@ static void sdl_rs90_blit_frame16(sdl_rs90_video_t *vid,
       vid->scale_frame16(vid, src, width, height, src_pitch);
 }
 
+#if defined(MIYOOMINI)
+static void sdl_rs90_blit_frame16_menu_miyoomini(sdl_rs90_video_t *vid,
+      uint16_t* src, unsigned width, unsigned height,
+      unsigned src_pitch)
+{
+      sdl_rs90_scale_frame16_point(vid, src, width/2, height/2, src_pitch/2);
+}
+#endif
+
 static void sdl_rs90_blit_frame32(sdl_rs90_video_t *vid,
       uint32_t* src, unsigned width, unsigned height,
       unsigned src_pitch)
@@ -1153,9 +1167,15 @@ static bool sdl_rs90_gfx_frame(void *data, const void *frame,
          SDL_LockSurface(vid->screen);
 
       /* Blit menu texture to SDL surface */
+#if defined(MIYOOMINI)
+      sdl_rs90_blit_frame16_menu_miyoomini(vid, vid->menu_texture,
+            SDL_RS90_WIDTH, SDL_RS90_HEIGHT,
+            SDL_RS90_WIDTH * sizeof(uint16_t));
+#else
       sdl_rs90_blit_frame16(vid, vid->menu_texture,
             SDL_RS90_WIDTH, SDL_RS90_HEIGHT,
             SDL_RS90_WIDTH * sizeof(uint16_t));
+#endif
    }
 
    /* Print OSD text, if required */
