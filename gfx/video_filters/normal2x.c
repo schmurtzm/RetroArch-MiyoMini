@@ -16,6 +16,10 @@
 
 /* Compile: gcc -o normal2x.so -shared normal2x.c -std=c99 -O3 -Wall -pedantic -fPIC */
 
+#ifdef MIYOOMINI
+#include "../drivers/miyoomini/scaler_neon.h"
+#endif
+
 #include "softfilter.h"
 #include <stdlib.h>
 #include <string.h>
@@ -108,6 +112,9 @@ static void normal2x_generic_destroy(void *data)
 static void normal2x_work_cb_xrgb8888(void *data, void *thread_data)
 {
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
+#ifdef MIYOOMINI
+   scale2x_n32((void*)thr->in_data, thr->out_data, thr->width, thr->height, thr->in_pitch, thr->out_pitch);
+#else
    const uint32_t *input              = (const uint32_t*)thr->in_data;
    uint32_t *output                   = (uint32_t*)thr->out_data;
    uint32_t in_stride                 = (uint32_t)(thr->in_pitch >> 2);
@@ -139,11 +146,15 @@ static void normal2x_work_cb_xrgb8888(void *data, void *thread_data)
       input  += in_stride;
       output += out_stride << 1;
    }
+#endif
 }
 
 static void normal2x_work_cb_rgb565(void *data, void *thread_data)
 {
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
+#ifdef MIYOOMINI
+   scale2x_n16((void*)thr->in_data, thr->out_data, thr->width, thr->height, thr->in_pitch, thr->out_pitch);
+#else
    const uint16_t *input              = (const uint16_t*)thr->in_data;
    uint16_t *output                   = (uint16_t*)thr->out_data;
    uint16_t in_stride                 = (uint16_t)(thr->in_pitch >> 1);
@@ -175,6 +186,7 @@ static void normal2x_work_cb_rgb565(void *data, void *thread_data)
       input  += in_stride;
       output += out_stride << 1;
    }
+#endif
 }
 
 static void normal2x_generic_packets(void *data,
