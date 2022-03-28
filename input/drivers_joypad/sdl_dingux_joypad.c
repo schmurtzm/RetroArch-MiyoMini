@@ -32,6 +32,12 @@
 #include "../../config.def.h"
 #endif
 
+#if defined(MIYOOMINI)
+#include <unistd.h>
+#include <fcntl.h>
+#define MIYOOMINI_RUMBLE_MS 250
+#endif
+
 /* RS-90 and RetroFW devices:
  * - Analog input: No
  * - Menu button:  No
@@ -84,20 +90,33 @@
  */
 #if defined(MIYOO)
 #define SDL_DINGUX_SDLK_X      SDLK_LSHIFT
-#define SDL_DINGUX_SDLK_A      SDLK_LALT
 #define SDL_DINGUX_SDLK_B      SDLK_LCTRL
+#if defined(MIYOOMINI)
+#define SDL_DINGUX_SDLK_A      SDLK_SPACE
+#define SDL_DINGUX_SDLK_Y      SDLK_LALT
+#else
+#define SDL_DINGUX_SDLK_A      SDLK_LALT
 #define SDL_DINGUX_SDLK_Y      SDLK_SPACE
+#endif
 #else
 #define SDL_DINGUX_SDLK_X      SDLK_SPACE
 #define SDL_DINGUX_SDLK_A      SDLK_LCTRL
 #define SDL_DINGUX_SDLK_B      SDLK_LALT
 #define SDL_DINGUX_SDLK_Y      SDLK_LSHIFT
 #endif
+#if defined(MIYOOMINI)
+#define SDL_DINGUX_SDLK_L      SDLK_e
+#define SDL_DINGUX_SDLK_R      SDLK_t
+#define SDL_DINGUX_SDLK_L2     SDLK_TAB
+#define SDL_DINGUX_SDLK_R2     SDLK_BACKSPACE
+#define SDL_DINGUX_SDLK_SELECT SDLK_RCTRL
+#else
 #define SDL_DINGUX_SDLK_L      SDLK_TAB
 #define SDL_DINGUX_SDLK_R      SDLK_BACKSPACE
 #define SDL_DINGUX_SDLK_L2     SDLK_PAGEUP
 #define SDL_DINGUX_SDLK_R2     SDLK_PAGEDOWN
 #define SDL_DINGUX_SDLK_SELECT SDLK_ESCAPE
+#endif
 #define SDL_DINGUX_SDLK_START  SDLK_RETURN
 #define SDL_DINGUX_SDLK_L3     SDLK_KP_DIVIDE
 #define SDL_DINGUX_SDLK_R3     SDLK_KP_PERIOD
@@ -106,7 +125,11 @@
 #define SDL_DINGUX_SDLK_DOWN   SDLK_DOWN
 #define SDL_DINGUX_SDLK_LEFT   SDLK_LEFT
 #if defined(MIYOO)
+#if defined(MIYOOMINI)
+#define SDL_DINGUX_SDLK_MENU   SDLK_ESCAPE
+#else
 #define SDL_DINGUX_SDLK_MENU   SDLK_RCTRL
+#endif
 #else
 #define SDL_DINGUX_SDLK_MENU   SDLK_HOME
 #endif
@@ -339,6 +362,37 @@ static bool sdl_dingux_joypad_set_rumble_gain(unsigned pad, unsigned gain)
          return true;
 
    return false;
+}
+#endif
+#if defined(MIYOOMINI)
+void miyoomini_rumble(uint16_t strength) {
+   int fd;
+   const char str_export[2] = "48";
+   const char str_direction[3] = "out";
+   char value[1];
+   value[0] = (strength == 0 ? 0x31 : 0x30);
+   fd = open("/sys/class/gpio/export", O_WRONLY);
+   if (fd > 0) { write(fd, str_export, 2); close(fd); }
+   fd = open("/sys/class/gpio/gpio48/direction", O_WRONLY);
+   if (fd > 0) { write(fd, str_direction, 3); close(fd); }
+   fd = open("/sys/class/gpio/gpio48/value", O_WRONLY);
+   if (fd > 0) { write(fd, value, 1); close(fd); }
+}
+
+uint32_t miyoomini_rumble_finish(uint32_t interval) {
+   miyoomini_rumble(0);
+   return 0;
+}
+
+static bool sdl_miyoomini_joypad_set_rumble(unsigned pad,
+      enum retro_rumble_effect effect, uint16_t strength) {
+   if (pad) return false;
+   if (strength) {
+      miyoomini_rumble(strength);
+      if (!SDL_WasInit(SDL_INIT_TIMER)) SDL_InitSubSystem(SDL_INIT_TIMER);
+      SDL_SetTimer(MIYOOMINI_RUMBLE_MS, miyoomini_rumble_finish);
+   }
+   return true;
 }
 #endif
 
@@ -794,7 +848,11 @@ input_device_driver_t sdl_dingux_joypad = {
    sdl_dingux_joypad_set_rumble,
    sdl_dingux_joypad_set_rumble_gain,
 #else
+ #if defined(MIYOOMINI)
+   sdl_miyoomini_joypad_set_rumble,
+ #else
    NULL,
+ #endif
    NULL,
 #endif
    sdl_dingux_joypad_name,

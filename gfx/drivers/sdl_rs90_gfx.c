@@ -16,6 +16,9 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#if defined(MIYOOMINI)
+#include "miyoomini/sdl_miyoomini_gfx.c"
+#else
 
 #include <stdlib.h>
 #include <string.h>
@@ -1447,3 +1450,4 @@ video_driver_t video_sdl_rs90 = {
 #endif
    sdl_rs90_get_poke_interface
 };
+#endif

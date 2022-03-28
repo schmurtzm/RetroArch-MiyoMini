@@ -3,34 +3,23 @@
 #########################
 
 # Default toolchain directory
-TOOLCHAIN_DIR=/opt/miyoo
+TOOLCHAIN_DIR=/opt/miyoomini83
 
 # All toolchain-related variables may be
 # overridden via the command line
 
-ifdef GCW0_CC
-CC                    = $(GCW0_CC)
-else
-CC                    = $(TOOLCHAIN_DIR)/usr/bin/arm-linux-gcc
-endif
+CC		= $(TOOLCHAIN_DIR)/bin/arm-linux-gnueabihf-gcc
+CXX		= $(TOOLCHAIN_DIR)/bin/arm-linux-gnueabihf-g++
+STRIP		= $(TOOLCHAIN_DIR)/bin/arm-linux-gnueabihf-strip
 
-ifdef GCW0_CXX
-CXX                   = $(GCW0_CXX)
-else
-CXX                   = $(TOOLCHAIN_DIR)/usr/bin/arm-linux-g++
-endif
+SDL_CONFIG	?= $(TOOLCHAIN_DIR)/arm-linux-gnueabihf/libc/usr/bin/sdl-config
+FREETYPE_CONFIG	?= $(TOOLCHAIN_DIR)/arm-linux-gnueabihf/libc/usr/bin/freetype-config
 
-ifdef GCW0_STRIP
-STRIP                 = $(GCW0_STRIP)
-else
-STRIP                 = $(TOOLCHAIN_DIR)/usr/bin/arm-linux-strip
-endif
+INC_DIR		?= $(TOOLCHAIN_DIR)/arm-linux-gnueabihf/libc/usr/include
+LIB_DIR		?= $(TOOLCHAIN_DIR)/arm-linux-gnueabihf/libc/usr/lib
 
-GCW0_SDL_CONFIG      ?= $(TOOLCHAIN_DIR)/usr/arm-miyoo-linux-uclibcgnueabi/sysroot/usr/bin/sdl-config
-GCW0_FREETYPE_CONFIG ?= $(TOOLCHAIN_DIR)/usr/arm-miyoo-linux-uclibcgnueabi/sysroot/usr/bin/freetype-config
-
-GCW0_INC_DIR         ?= $(TOOLCHAIN_DIR)/usr/arm-miyoo-linux-uclibcgnueabi/sysroot/usr/include
-GCW0_LIB_DIR         ?= $(TOOLCHAIN_DIR)/usr/arm-miyoo-linux-uclibcgnueabi/sysroot/usr/lib
+LTO		= -flto
+STRIP_BIN	= 1
 
 #########################
 #########################
@@ -39,10 +28,11 @@ PACKAGE_NAME = retroarch
 
 DEBUG ?= 0
 
+MIYOOMINI = 1
 MIYOO = 1
 DINGUX = 1
 HAVE_SCREENSHOTS = 0
-HAVE_REWIND = 0
+HAVE_REWIND = 1
 HAVE_7ZIP = 1
 HAVE_AL = 0
 # ALSA freezes when switching back from menu
@@ -90,6 +80,7 @@ HAVE_RJPEG = 1
 HAVE_RPILED = 0
 HAVE_RPNG = 1
 HAVE_RUNAHEAD = 0
+#HAVE_SDL = 1
 HAVE_SDL_DINGUX = 1
 HAVE_SHADERPIPELINE = 0
 HAVE_STB_FONT = 0
@@ -112,33 +103,34 @@ HAVE_LIBSHAKE = 0
 HAVE_CORE_INFO_CACHE = 1
 #HAVE_TINYALSA = 1
 HAVE_NEAREST_RESAMPLER = 1
+HAVE_NEON = 1
 
 OS = Linux
 TARGET = retroarch
 
 OBJ :=
 LINK := $(CXX)
-DEF_FLAGS := -march=armv5te -mtune=arm926ej-s -ffast-math -fomit-frame-pointer
+DEF_FLAGS := -marm -mtune=cortex-a7 -march=armv7ve+simd -mfpu=neon-vfpv4 -mfloat-abi=hard -ffast-math -fomit-frame-pointer
 DEF_FLAGS += -ffunction-sections -fdata-sections
-DEF_FLAGS += -I. -Ideps -Ideps/stb -DMIYOO=1 -DDINGUX -MMD
-DEF_FLAGS += -Wall -Wno-unused-variable -flto
+DEF_FLAGS += -I. -Ideps -Ideps/stb -DMIYOO=1 -DMIYOOMINI -DDINGUX -MMD
+DEF_FLAGS += -Wall -Wno-unused-variable $(LTO)
 DEF_FLAGS += -std=gnu99 -D_GNU_SOURCE
-LIBS := -ldl -lz -lrt -pthread
-CFLAGS :=
+LIBS := -ldl -lz -lrt -pthread -lmi_sys -lmi_gfx
+CFLAGS := 
 CXXFLAGS := -fno-exceptions -fno-rtti -std=c++11 -D__STDC_CONSTANT_MACROS
 ASFLAGS :=
-LDFLAGS := -Wl,--gc-sections
-INCLUDE_DIRS = -I$(GCW0_INC_DIR)
-LIBRARY_DIRS = -L$(GCW0_LIB_DIR)
+LDFLAGS := -Wl,--gc-sections -s
+INCLUDE_DIRS = -I$(INC_DIR)
+LIBRARY_DIRS = -L$(LIB_DIR)
 DEFINES := -DRARCH_INTERNAL -D_FILE_OFFSET_BITS=64 -UHAVE_STATIC_DUMMY
 DEFINES += -DHAVE_C99=1 -DHAVE_CXX=1
 DEFINES += -DHAVE_GETOPT_LONG=1 -DHAVE_STRCASESTR=1 -DHAVE_DYNAMIC=1
-DEFINES += -DHAVE_FILTERS_BUILTIN
+DEFINES += -DHAVE_FILTERS_BUILTIN -DHAVE_ARM_NEON_ASM_OPTIMIZATIONS
 
-SDL_DINGUX_CFLAGS := $(shell $(GCW0_SDL_CONFIG) --cflags)
-SDL_DINGUX_LIBS := $(shell $(GCW0_SDL_CONFIG) --libs)
-FREETYPE_CFLAGS := $(shell $(GCW0_FREETYPE_CONFIG) --cflags)
-FREETYPE_LIBS := $(shell $(GCW0_FREETYPE_CONFIG) --libs)
+SDL_DINGUX_CFLAGS := $(shell $(SDL_CONFIG) --cflags)
+SDL_DINGUX_LIBS := $(shell $(SDL_CONFIG) --libs)
+FREETYPE_CFLAGS := $(shell $(FREETYPE_CONFIG) --cflags)
+FREETYPE_LIBS := $(shell $(FREETYPE_CONFIG) --libs)
 MMAP_LIBS = -lc
 
 OBJDIR_BASE := obj-unix
@@ -148,7 +140,7 @@ ifeq ($(DEBUG), 1)
    DEF_FLAGS += -O0 -g -DDEBUG -D_DEBUG
 else
    OBJDIR := $(OBJDIR_BASE)/release
-   DEF_FLAGS += -O2 -DNDEBUG
+   DEF_FLAGS += -Ofast -DNDEBUG
 endif
 
 include Makefile.common
