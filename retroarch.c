@@ -106,6 +106,10 @@
 #include "network/discord.h"
 #endif
 
+#ifdef HAVE_MIST
+#include "steam/steam.h"
+#endif
+
 #include "config.def.h"
 
 #include "runloop.h"
@@ -1871,6 +1875,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_UNLOAD_CORE:
          {
+            bool load_dummy_core            = data ? *(bool*)data : true;
             bool contentless                = false;
             bool is_inited                  = false;
             content_ctx_info_t content_info = {0};
@@ -1923,15 +1928,16 @@ bool command_event(enum event_command cmd, void *data)
             if (     runloop_st->remaps_core_active
                   || runloop_st->remaps_content_dir_active
                   || runloop_st->remaps_game_active
+                  || !string_is_empty(runloop_st->name.remapfile)
                )
             {
-               input_remapping_deinit();
+               input_remapping_deinit(true);
                input_remapping_set_defaults(true);
             }
             else
                input_remapping_restore_global_config(true);
 
-            if (is_inited)
+            if (is_inited && load_dummy_core)
             {
 #ifdef HAVE_MENU
                if (  (settings->uints.quit_on_close_content == QUIT_ON_CLOSE_CONTENT_CLI && global->launched_from_cli)
@@ -1990,9 +1996,6 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE:
 #ifdef HAVE_CHEEVOS
          rcheevos_toggle_hardcore_paused();
-
-         if (rcheevos_hardcore_active())
-            runloop_st->slowmotion = false;
 #endif
          break;
       case CMD_EVENT_REINIT_FROM_TOGGLE:
@@ -2016,7 +2019,8 @@ bool command_event(enum event_command cmd, void *data)
             if (core_type_is_dummy)
                return false;
 
-            state_manager_event_deinit(&runloop_st->rewind_st);
+            state_manager_event_deinit(&runloop_st->rewind_st,
+                  &runloop_st->current_core);
          }
 #endif
          break;
@@ -2778,7 +2782,8 @@ bool command_event(enum event_command cmd, void *data)
             /* Disable rewind & SRAM autosave if it was enabled
              * TODO/FIXME: Add a setting for these tweaks */
 #ifdef HAVE_REWIND
-            state_manager_event_deinit(&runloop_st->rewind_st);
+            state_manager_event_deinit(&runloop_st->rewind_st,
+                  &runloop_st->current_core);
 #endif
 #ifdef HAVE_THREADS
             autosave_deinit();
@@ -2814,7 +2819,8 @@ bool command_event(enum event_command cmd, void *data)
             /* Disable rewind if it was enabled
                TODO/FIXME: Add a setting for these tweaks */
 #ifdef HAVE_REWIND
-            state_manager_event_deinit(&runloop_st->rewind_st);
+            state_manager_event_deinit(&runloop_st->rewind_st,
+                  &runloop_st->current_core);
 #endif
 #ifdef HAVE_THREADS
             autosave_deinit();
@@ -2850,7 +2856,8 @@ bool command_event(enum event_command cmd, void *data)
             /* Disable rewind if it was enabled
              * TODO/FIXME: Add a setting for these tweaks */
 #ifdef HAVE_REWIND
-            state_manager_event_deinit(&runloop_st->rewind_st);
+            state_manager_event_deinit(&runloop_st->rewind_st,
+                  &runloop_st->current_core);
 #endif
 #ifdef HAVE_THREADS
             autosave_deinit();
@@ -3410,6 +3417,14 @@ bool command_event(enum event_command cmd, void *data)
                      settings->uints.input_max_users);
          }
          break;
+      case CMD_EVENT_VRR_RUNLOOP_TOGGLE:
+         settings->bools.vrr_runloop_enable = !(settings->bools.vrr_runloop_enable);
+         runloop_msg_queue_push(
+               msg_hash_to_str(
+                     settings->bools.vrr_runloop_enable ? MSG_VRR_RUNLOOP_ENABLED
+                                                        : MSG_VRR_RUNLOOP_DISABLED),
+               1, 100, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         break;
       case CMD_EVENT_NONE:
          return false;
    }
@@ -3435,7 +3450,7 @@ void retroarch_override_setting_set(
             if (val)
             {
                unsigned                bit = *val;
-	       runloop_state_t *runloop_st = runloop_state_get_ptr();
+               runloop_state_t *runloop_st = runloop_state_get_ptr();
                BIT256_SET(runloop_st->has_set_libretro_device, bit);
             }
          }
@@ -3512,7 +3527,7 @@ void retroarch_override_setting_unset(
             if (val)
             {
                unsigned                bit = *val;
-	       runloop_state_t *runloop_st = runloop_state_get_ptr();
+               runloop_state_t *runloop_st = runloop_state_get_ptr();
                BIT256_CLEAR(runloop_st->has_set_libretro_device, bit);
             }
          }
@@ -3583,7 +3598,7 @@ static void retroarch_override_setting_free_state(void)
          unsigned j;
          for (j = 0; j < MAX_USERS; j++)
             retroarch_override_setting_unset(
-                  (enum rarch_override_setting)(i), &j);
+                  RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &j);
       }
       else
          retroarch_override_setting_unset(
@@ -3740,6 +3755,10 @@ void main_exit(void *args)
    play_feature_delivery_deinit();
 #endif
 
+#if defined(HAVE_MIST)
+   steam_deinit();
+#endif
+
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    CoUninitialize();
 #endif
@@ -3788,6 +3807,10 @@ int rarch_main(int argc, char *argv[], void *data)
    play_feature_delivery_init();
 #endif
 
+#if defined(HAVE_MIST)
+   steam_init();
+#endif
+
    libretro_free_system_info(&runloop_st->system.info);
    command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
    rarch_favorites_deinit();
@@ -3811,7 +3834,7 @@ int rarch_main(int argc, char *argv[], void *data)
    audio_state_get_ptr()->active = true;
 
    {
-      uint8_t i;
+      unsigned i;
       for (i = 0; i < MAX_USERS; i++)
          input_config_set_device(i, RETRO_DEVICE_JOYPAD);
    }
@@ -3849,6 +3872,10 @@ int rarch_main(int argc, char *argv[], void *data)
       ret = runloop_iterate();
 
       task_queue_check();
+
+#ifdef HAVE_MIST
+   steam_poll();
+#endif
 
 #ifdef HAVE_QT
       app_exit = ui_companion_qt.application->exiting;
@@ -4735,7 +4762,7 @@ static bool retroarch_parse_input_and_config(
                      retroarch_print_help(argv[0]);
                      retroarch_fail(1, "retroarch_parse_input()");
                   }
-                  new_port = port -1;
+                  new_port = port - 1;
 
                   input_config_set_device(new_port, id);
 
@@ -4780,7 +4807,7 @@ static bool retroarch_parse_input_and_config(
                      retroarch_fail(1, "retroarch_parse_input()");
                   }
                   new_port = port - 1;
-                  input_config_set_device(port - 1, RETRO_DEVICE_NONE);
+                  input_config_set_device(new_port, RETRO_DEVICE_NONE);
                   retroarch_override_setting_set(
                         RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &new_port);
                }
@@ -5396,9 +5423,10 @@ bool retroarch_main_init(int argc, char *argv[])
          if (     runloop_st->remaps_core_active
                || runloop_st->remaps_content_dir_active
                || runloop_st->remaps_game_active
+               || !string_is_empty(runloop_st->name.remapfile)
             )
          {
-            input_remapping_deinit();
+            input_remapping_deinit(false);
             input_remapping_set_defaults(true);
          }
          else
@@ -5682,17 +5710,25 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_IS_OVERRIDES_ACTIVE:
          return runloop_st->overrides_active;
       case RARCH_CTL_SET_REMAPS_CORE_ACTIVE:
-         runloop_st->remaps_core_active = true;
+         /* Only one type of remap can be active
+          * at any one time */
+         runloop_st->remaps_core_active        = true;
+         runloop_st->remaps_content_dir_active = false;
+         runloop_st->remaps_game_active        = false;
          break;
       case RARCH_CTL_IS_REMAPS_CORE_ACTIVE:
          return runloop_st->remaps_core_active;
       case RARCH_CTL_SET_REMAPS_GAME_ACTIVE:
-         runloop_st->remaps_game_active = true;
+         runloop_st->remaps_core_active        = false;
+         runloop_st->remaps_content_dir_active = false;
+         runloop_st->remaps_game_active        = true;
          break;
       case RARCH_CTL_IS_REMAPS_GAME_ACTIVE:
          return runloop_st->remaps_game_active;
       case RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE:
+         runloop_st->remaps_core_active        = false;
          runloop_st->remaps_content_dir_active = true;
+         runloop_st->remaps_game_active        = false;
          break;
       case RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE:
          return runloop_st->remaps_content_dir_active;
@@ -5828,7 +5864,7 @@ bool retroarch_override_setting_is_set(
             if (val)
             {
                unsigned                bit = *val;
-	       runloop_state_t *runloop_st = runloop_state_get_ptr();
+               runloop_state_t *runloop_st = runloop_state_get_ptr();
                return BIT256_GET(runloop_st->has_set_libretro_device, bit);
             }
          }
@@ -6028,9 +6064,10 @@ bool retroarch_main_quit(void)
       if (     runloop_st->remaps_core_active
             || runloop_st->remaps_content_dir_active
             || runloop_st->remaps_game_active
+            || !string_is_empty(runloop_st->name.remapfile)
          )
       {
-         input_remapping_deinit();
+         input_remapping_deinit(true);
          input_remapping_set_defaults(true);
       }
       else
@@ -6089,6 +6126,7 @@ enum retro_language rarch_get_language_from_iso(const char *iso639)
       {"id", RETRO_LANGUAGE_INDONESIAN},
       {"sv", RETRO_LANGUAGE_SWEDISH},
       {"uk", RETRO_LANGUAGE_UKRAINIAN},
+      {"cs", RETRO_LANGUAGE_CZECH},
    };
 
    if (string_is_empty(iso639))

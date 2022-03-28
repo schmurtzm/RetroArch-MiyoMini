@@ -678,6 +678,37 @@ static bool wiiu_font_init_first(
 }
 #endif
 
+#ifdef __PSL1GHT__
+static const font_renderer_t *rsx_font_backends[] = {
+   &rsx_font,
+   NULL
+};
+
+static bool rsx_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
+{
+   unsigned i;
+
+   for (i = 0; rsx_font_backends[i]; i++)
+   {
+      void *data = rsx_font_backends[i]->init(
+            video_data, font_path, font_size,
+            is_threaded);
+
+      if (!data)
+         continue;
+
+      *font_driver = rsx_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
+
 static bool font_init_first(
       const void **font_driver, void **font_handle,
       void *video_data, const char *font_path, float font_size,
@@ -771,6 +802,11 @@ static bool font_init_first(
 #ifdef HAVE_LIBNX
       case FONT_DRIVER_RENDER_SWITCH:
          return switch_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size, is_threaded);
+#endif
+#ifdef __PSL1GHT__
+      case FONT_DRIVER_RENDER_RSX:
+         return rsx_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
 #endif
 #ifdef HAVE_GDI
@@ -1302,7 +1338,6 @@ font_data_t *font_driver_init_first(
    void *font_handle       = NULL;
    bool ok                 = false;
 #ifdef HAVE_THREADS
-
    if (     threading_hint
          && is_threaded
          && !video_driver_is_hw_context())
@@ -1316,11 +1351,15 @@ font_data_t *font_driver_init_first(
 
    if (ok)
    {
-      font_data_t *font   = (font_data_t*)malloc(sizeof(*font));
-      font->renderer      = (const font_renderer_t*)font_driver;
-      font->renderer_data = font_handle;
-      font->size          = font_size;
-      return font;
+      font_data_t *font      = (font_data_t*)malloc(sizeof(*font));
+
+      if (font)
+      {
+         font->renderer      = (const font_renderer_t*)font_driver;
+         font->renderer_data = font_handle;
+         font->size          = font_size;
+         return font;
+      }
    }
 
    return NULL;

@@ -20,6 +20,10 @@
 #include "../configuration.h"
 #include "../verbosity.h"
 
+#ifdef HAVE_MIST
+#include "../steam/steam.h"
+#endif
+
 /* Standard reference DPI value, used when determining
  * DPI-aware scaling factors */
 #define REFERENCE_DPI 96.0f
@@ -115,6 +119,9 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
 #endif
 #ifdef WIIU
    &gfx_display_ctx_wiiu,
+#endif
+#ifdef __PSL1GHT__
+   &gfx_display_ctx_rsx,
 #endif
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #ifdef HAVE_GDI
@@ -218,6 +225,10 @@ static bool gfx_display_check_compatibility(
          break;
       case GFX_VIDEO_DRIVER_SWITCH:
          if (string_is_equal(video_driver, "switch"))
+            return true;
+         break;
+      case GFX_VIDEO_DRIVER_RSX:
+         if (string_is_equal(video_driver, "rsx"))
             return true;
          break;
    }
@@ -1174,6 +1185,10 @@ void gfx_display_draw_keyboard(
    rotate_draw.scale_y      = 1.0;
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
+
+#ifdef HAVE_MIST
+   if(steam_has_osk_open()) return;
+#endif
 
    gfx_display_draw_quad(
          p_disp,

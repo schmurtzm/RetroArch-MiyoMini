@@ -536,6 +536,7 @@ VIDEO DRIVER
 
 #if defined(__PSL1GHT__)
 #include "../gfx/drivers/rsx_gfx.c"
+#include "../gfx/drivers_display/gfx_display_rsx.c"
 #elif defined(GEKKO)
 #include "../gfx/drivers/gx_gfx.c"
 #elif defined(PSP)
@@ -583,7 +584,12 @@ FONTS
 ============================================================ */
 
 #include "../gfx/drivers_font_renderer/bitmapfont.c"
+
+#ifdef HAVE_LANGEXTRA
 #include "../gfx/drivers_font_renderer/bitmapfont_10x10.c"
+#include "../gfx/drivers_font_renderer/bitmapfont_6x10.c"
+#endif
+
 #include "../gfx/font_driver.c"
 
 #if defined(HAVE_D3D9) && defined(HAVE_D3DX)
@@ -633,6 +639,10 @@ FONTS
 
 #if defined(WIIU)
 #include "../gfx/drivers_font/wiiu_font.c"
+#endif
+
+#if defined(__PSL1GHT__)
+#include "../gfx/drivers_font/rsx_font.c"
 #endif
 
 #if defined(HAVE_CACA)
@@ -704,7 +714,10 @@ INPUT
 #elif defined(PS2)
 #include "../input/drivers/ps2_input.c"
 #include "../input/drivers_joypad/ps2_joypad.c"
-#elif defined(__PS3__) || defined(__PSL1GHT__)
+#elif defined(__PSL1GHT__)
+#include "../input/drivers/psl1ght_input.c"
+#include "../input/drivers_joypad/ps3_joypad.c"
+#elif defined(__PS3__)
 #include "../input/drivers/ps3_input.c"
 #include "../input/drivers_joypad/ps3_joypad.c"
 #elif defined(ORBIS)
@@ -1256,6 +1269,7 @@ RETROARCH
 #include "../intl/msg_hash_id.c"
 #include "../intl/msg_hash_sv.c"
 #include "../intl/msg_hash_uk.c"
+#include "../intl/msg_hash_cs.c"
 #endif
 
 #include "../intl/msg_hash_us.c"
