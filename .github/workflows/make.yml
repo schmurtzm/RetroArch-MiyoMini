@@ -1,0 +1,28 @@
+name: Build armhf code
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build the repo in debian buildroot
+      run: |
+        docker run \
+        -v ${{ github.workspace }}:/root/workspace \
+        techdevangelist/miyoomini-buildroot:latest /bin/bash -c "cd /root/workspace && make -f Makefile.libretro platform=classic_armv7_a7 && ls -lah *.so"
+
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v3.0.0
+      with:
+        name: gambatte_libretro.so
+        path: gambatte_libretro.so
+        if-no-files-found: error
+        retention-days: 30
