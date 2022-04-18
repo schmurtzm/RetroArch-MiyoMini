@@ -2,6 +2,7 @@
 ## Toolchain variables ##
 #########################
 
+
 # Default toolchain directory
 TOOLCHAIN_DIR=/usr
 
