@@ -2,9 +2,9 @@ name: Build armhf code
 
 on:
   push:
-    branches: [ master ]
+    branches: [ miyoo* ]
   pull_request:
-    branches: [ master ]
+    branches: [ miyoo* ]
 
 jobs:
   build:
