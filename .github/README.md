@@ -1,9 +1,9 @@
-RetroArch 1.10.3 (dingux build) for miyoomini
+# RetroArch 1.10.3 (dingux build) for miyoomini
 
 Based on the dingux version of RetroArch, with video/audio/input driver customized for miyoomini
 Specific differences from the dingux version are described below
 
--- Video, Scaling --
+## Video, Scaling 
 
 Video driver is specialized for miyoomini, mainly uses hardware 2D graphics engine (MI_GFX)
 
@@ -31,7 +31,7 @@ Recommended settings:
 - Bilinear	   : If you want to increase the performance as much as possible even if the screen is blurry
 - Nearest Neighbor : If you want to make pixels crisp anyway even if the size of each pixels are distorted
 
--- Audio --
+## Audio 
 
 There are two drivers: oss and sdl
 
@@ -43,7 +43,7 @@ sdl: Use custom SDL, latancy changes from a minimum of 21 ms in increments of ab
 
 The latency default is 64 ms, a comfortable value with either driver
 
--- Input, Rumble --
+## Input, Rumble 
 
 MENU is assigned to L3 and POWER(actually sleeps so normally unusable) to R3
 
