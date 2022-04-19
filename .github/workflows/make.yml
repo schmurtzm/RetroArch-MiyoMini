@@ -1,10 +1,7 @@
-name: Build armhf code
+name: Build via Docker image
 
 on:
-  push:
-    branches: [ miyoo* ]
-  pull_request:
-    branches: [ miyoo* ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -13,16 +10,18 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Build the repo in debian buildroot
+    - name: Checkout & build the repo in buildroot
       run: |
         docker run \
         -v ${{ github.workspace }}:/root/workspace \
         techdevangelist/miyoomini-buildroot:latest /bin/bash -c "cd /root/workspace && make -f Makefile.miyoomini && ls -lah retroarch*"
 
-    - name: Upload a Build Artifact
+    - name: Upload the build artifact
       uses: actions/upload-artifact@v3.0.0
       with:
         name: retroarch
-        path: retroarch
+        path: | 
+          retroarch
+          retroarch.cfg
         if-no-files-found: error
         retention-days: 30
