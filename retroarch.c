@@ -102,6 +102,9 @@
 #include "play_feature_delivery/play_feature_delivery.h"
 #endif
 
+#ifdef HAVE_PRESENCE
+#include "network/presence.h"
+#endif
 #ifdef HAVE_DISCORD
 #include "network/discord.h"
 #endif
@@ -1903,6 +1906,18 @@ bool command_event(enum event_command cmd, void *data)
                   settings->bools.savestate_auto_save,
                   runloop_st->current_core_type);
 
+            if (     runloop_st->remaps_core_active
+                  || runloop_st->remaps_content_dir_active
+                  || runloop_st->remaps_game_active
+                  || !string_is_empty(runloop_st->name.remapfile)
+               )
+            {
+               input_remapping_deinit(true);
+               input_remapping_set_defaults(true);
+            }
+            else
+               input_remapping_restore_global_config(true);
+
 #ifdef HAVE_CONFIGFILE
             if (runloop_st->overrides_active)
             {
@@ -1925,18 +1940,6 @@ bool command_event(enum event_command cmd, void *data)
 
             video_driver_restore_cached(settings);
 
-            if (     runloop_st->remaps_core_active
-                  || runloop_st->remaps_content_dir_active
-                  || runloop_st->remaps_game_active
-                  || !string_is_empty(runloop_st->name.remapfile)
-               )
-            {
-               input_remapping_deinit(true);
-               input_remapping_set_defaults(true);
-            }
-            else
-               input_remapping_restore_global_config(true);
-
             if (is_inited && load_dummy_core)
             {
 #ifdef HAVE_MENU
@@ -1948,15 +1951,12 @@ bool command_event(enum event_command cmd, void *data)
                if (!task_push_start_dummy_core(&content_info))
                   return false;
             }
-#ifdef HAVE_DISCORD
-            if (discord_state_get_ptr()->inited)
-            {
-               discord_userdata_t userdata;
-               userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
-               command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-               userdata.status = DISCORD_PRESENCE_MENU;
-               command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-            }
+#ifdef HAVE_PRESENCE
+            presence_userdata_t userdata;
+            userdata.status = PRESENCE_NETPLAY_NETPLAY_STOPPED;
+            command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
+            userdata.status = PRESENCE_MENU;
+            command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
 #endif
 #ifdef HAVE_DYNAMIC
             path_clear(RARCH_PATH_CORE);
@@ -3342,17 +3342,15 @@ bool command_event(enum event_command cmd, void *data)
          }
 #endif
          break;
-      case CMD_EVENT_DISCORD_UPDATE:
+      case CMD_EVENT_PRESENCE_UPDATE:
          {
-#ifdef HAVE_DISCORD
-            discord_userdata_t *userdata = NULL;
-            discord_state_t *discord_st  = discord_state_get_ptr();
-            if (!data || !discord_st->ready)
+#ifdef HAVE_PRESENCE
+            presence_userdata_t *userdata = NULL;
+            if (!data)
                return false;
 
-            userdata = (discord_userdata_t*)data;
-            if (discord_st->ready)
-               discord_update(userdata->status);
+            userdata = (presence_userdata_t*)data;
+            presence_update(userdata->status);
 #endif
          }
          break;
@@ -5410,16 +5408,8 @@ bool retroarch_main_init(int argc, char *argv[])
       {
          /* Before initialising the dummy core, ensure
           * that we:
-          * - Disable any active config overrides
-          * - Unload any active input remaps */
-#ifdef HAVE_CONFIGFILE
-         if (runloop_st->overrides_active)
-         {
-            /* Reload the original config */
-            config_unload_override();
-            runloop_st->overrides_active = false;
-         }
-#endif
+          * - Unload any active input remaps
+          * - Disable any active config overrides */
          if (     runloop_st->remaps_core_active
                || runloop_st->remaps_content_dir_active
                || runloop_st->remaps_game_active
@@ -5431,6 +5421,15 @@ bool retroarch_main_init(int argc, char *argv[])
          }
          else
             input_remapping_restore_global_config(true);
+
+#ifdef HAVE_CONFIGFILE
+         if (runloop_st->overrides_active)
+         {
+            /* Reload the original config */
+            config_unload_override();
+            runloop_st->overrides_active = false;
+         }
+#endif
 
 #ifdef HAVE_DYNAMIC
          /* Ensure that currently loaded core is properly
@@ -5497,15 +5496,14 @@ bool retroarch_main_init(int argc, char *argv[])
 
 	   if (command_event(CMD_EVENT_DISCORD_INIT, NULL))
 		   discord_st->inited = true;
-
-	   if (discord_st->inited)
-	   {
-		   discord_userdata_t userdata;
-		   userdata.status = DISCORD_PRESENCE_MENU;
-
-		   command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-	   }
    }
+#endif
+
+#ifdef HAVE_PRESENCE
+   presence_userdata_t userdata;
+   userdata.status = PRESENCE_MENU;
+
+   command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
 #endif
 
 #if defined(HAVE_AUDIOMIXER)
@@ -6013,14 +6011,14 @@ bool retroarch_main_quit(void)
    runloop_state_t *runloop_st   = runloop_state_get_ptr();
    video_driver_state_t*video_st = video_state_get_ptr();
    settings_t *settings          = config_get_ptr();
+
+#ifdef HAVE_PRESENCE
+   presence_userdata_t userdata;
+   userdata.status = PRESENCE_SHUTDOWN;
+   command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
+#endif
 #ifdef HAVE_DISCORD
    discord_state_t *discord_st   = discord_state_get_ptr();
-   if (discord_st->inited)
-   {
-      discord_userdata_t userdata;
-      userdata.status = DISCORD_PRESENCE_SHUTDOWN;
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-   }
    if (discord_st->ready)
    {
       Discord_ClearPresence();
@@ -6049,18 +6047,6 @@ bool retroarch_main_quit(void)
        * save state file may be truncated) */
       content_wait_for_save_state_task();
 
-#ifdef HAVE_CONFIGFILE
-      if (runloop_st->overrides_active)
-      {
-         /* Reload the original config */
-         config_unload_override();
-         runloop_st->overrides_active = false;
-      }
-#endif
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-      runloop_st->runtime_shader_preset_path[0] = '\0';
-#endif
-
       if (     runloop_st->remaps_core_active
             || runloop_st->remaps_content_dir_active
             || runloop_st->remaps_game_active
@@ -6072,6 +6058,18 @@ bool retroarch_main_quit(void)
       }
       else
          input_remapping_restore_global_config(true);
+
+#ifdef HAVE_CONFIGFILE
+      if (runloop_st->overrides_active)
+      {
+         /* Reload the original config */
+         config_unload_override();
+         runloop_st->overrides_active = false;
+      }
+#endif
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+      runloop_st->runtime_shader_preset_path[0] = '\0';
+#endif
    }
 
    runloop_st->shutdown_initiated = true;
@@ -6127,6 +6125,7 @@ enum retro_language rarch_get_language_from_iso(const char *iso639)
       {"sv", RETRO_LANGUAGE_SWEDISH},
       {"uk", RETRO_LANGUAGE_UKRAINIAN},
       {"cs", RETRO_LANGUAGE_CZECH},
+      {"val", RETRO_LANGUAGE_CATALAN_VALENCIA},
    };
 
    if (string_is_empty(iso639))

@@ -53,6 +53,11 @@
 #include "../input/input_overlay.h"
 #endif
 
+/* Required for Steam enum settings */
+#if defined(HAVE_MIST)
+#include "steam/steam.h"
+#endif
+
 #if defined(HW_RVL)
 #define MAX_GAMMA_SETTING 30
 #elif defined(GEKKO)
@@ -605,6 +610,8 @@
 
 #define DEFAULT_SETTINGS_SHOW_DIRECTORY true
 
+#define DEFAULT_SETTINGS_SHOW_STEAM true
+
 #define DEFAULT_QUICK_MENU_SHOW_RESUME_CONTENT true
 
 #define DEFAULT_QUICK_MENU_SHOW_RESTART_CONTENT true
@@ -1051,9 +1058,9 @@ static const bool audio_enable_menu_bgm    = false;
 #endif
 
 /* Output samplerate. */
-#ifdef GEKKO
+#if defined(GEKKO) || defined(MIYOO)
 #define DEFAULT_OUTPUT_RATE 32000
-#elif defined(_3DS) || defined(RETROFW) || defined(MIYOO)
+#elif defined(_3DS) || defined(RETROFW)
 #define DEFAULT_OUTPUT_RATE 32730
 #else
 #define DEFAULT_OUTPUT_RATE 48000
@@ -1518,6 +1525,11 @@ static const enum resampler_quality audio_resampler_quality_level = RESAMPLER_QU
 
 static const unsigned midi_volume = 100;
 
+#ifdef HAVE_MIST
+/* Steam */
+#define DEFAULT_STEAM_RICH_PRESENCE_FORMAT STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM
+#endif
+
 /* Only applies to Android 7.0 (API 24) and up */
 static const bool sustained_performance_mode = false;
 
@@ -1646,7 +1658,7 @@ static const bool enable_device_vibration    = false;
 
 #define DEFAULT_AI_SERVICE_TARGET_LANG 0
 
-#define DEFAULT_AI_SERVICE_ENABLE true
+#define DEFAULT_AI_SERVICE_ENABLE false
 
 #define DEFAULT_AI_SERVICE_PAUSE false
 

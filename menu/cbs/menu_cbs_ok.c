@@ -489,6 +489,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
       case ACTION_OK_DL_CORE_MANAGER_LIST:
          return MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST;
 #ifdef HAVE_MIST
+      case ACTION_OK_DL_STEAM_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_STEAM_SETTINGS_LIST;
       case ACTION_OK_DL_CORE_MANAGER_STEAM_LIST:
          return MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_STEAM_LIST;
 #endif
@@ -1583,6 +1585,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_MANUAL_CONTENT_SCAN_LIST:
       case ACTION_OK_DL_CORE_MANAGER_LIST:
 #ifdef HAVE_MIST
+      case ACTION_OK_DL_STEAM_SETTINGS_LIST:
       case ACTION_OK_DL_CORE_MANAGER_STEAM_LIST:
 #endif
       case ACTION_OK_DL_CORE_OPTION_OVERRIDE_LIST:
@@ -5829,6 +5832,7 @@ DEFAULT_ACTION_OK_FUNC(action_ok_push_manual_content_scan_list, ACTION_OK_DL_MAN
 DEFAULT_ACTION_OK_FUNC(action_ok_manual_content_scan_dat_file, ACTION_OK_DL_MANUAL_CONTENT_SCAN_DAT_FILE)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_core_manager_list, ACTION_OK_DL_CORE_MANAGER_LIST)
 #ifdef HAVE_MIST
+DEFAULT_ACTION_OK_FUNC(action_ok_steam_settings_list, ACTION_OK_DL_STEAM_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_core_manager_steam_list, ACTION_OK_DL_CORE_MANAGER_STEAM_LIST)
 #endif
 DEFAULT_ACTION_OK_FUNC(action_ok_push_core_option_override_list, ACTION_OK_DL_CORE_OPTION_OVERRIDE_LIST)
@@ -5937,7 +5941,7 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
    unsigned menu_type           = 0;
    enum msg_hash_enums enum_idx = MSG_UNKNOWN;
    net_driver_state_t *net_st   = networking_state_get_ptr();
-   http_transfer_data_t *data   = task_data;
+   http_transfer_data_t *data   = (http_transfer_data_t*)task_data;
    bool refresh                 = false;
 
    menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
@@ -5961,7 +5965,7 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
       return;
    }
 
-   new_data = realloc(data->data, data->len + 1);
+   new_data              = (char*)realloc(data->data, data->len + 1);
    if (!new_data)
       return;
    data->data            = new_data;
@@ -5980,7 +5984,7 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
       netplay_rooms_parse(data->data);
 
       net_st->room_count = netplay_rooms_get_count();
-      net_st->room_list  = calloc(net_st->room_count,
+      net_st->room_list  = (struct netplay_room*)calloc(net_st->room_count,
          sizeof(*net_st->room_list));
 
       for (i = 0; i < net_st->room_count; i++)
@@ -6043,7 +6047,7 @@ static void netplay_refresh_lan_cb(retro_task_t *task,
       int i;
 
       net_st->room_count = hosts->size;
-      net_st->room_list  = calloc(net_st->room_count,
+      net_st->room_list  = (struct netplay_room*)calloc(net_st->room_count,
          sizeof(*net_st->room_list));
 
       for (i = 0; i < net_st->room_count; i++)
@@ -8262,6 +8266,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE,       action_ok_playlist_default_core},
          {MENU_ENUM_LABEL_CORE_MANAGER_LIST,                   action_ok_push_core_manager_list},
 #ifdef HAVE_MIST
+         {MENU_ENUM_LABEL_STEAM_SETTINGS,                      action_ok_steam_settings_list},
          {MENU_ENUM_LABEL_CORE_MANAGER_STEAM_LIST,             action_ok_push_core_manager_steam_list},
          {MENU_ENUM_LABEL_CORE_STEAM_INSTALL,                  action_ok_core_steam_install},
          {MENU_ENUM_LABEL_CORE_STEAM_UNINSTALL,                action_ok_core_steam_uninstall},

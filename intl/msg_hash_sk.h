@@ -1173,6 +1173,9 @@ MSG_HASH(
    "Zmeniť východzie zložky umiestnenia súborov."
    )
 
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 MSG_HASH(
@@ -1592,10 +1595,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Pomer strán"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Vlastný pomer strán"
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -2028,10 +2027,6 @@ MSG_HASH(
    "Odchýlka osi pri stlačení tlačidla"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-   "Určuje, ako ďaleko musí byť os naklonená, aby došlo k stlačeniu tlačidla."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
    "Analógová mŕtva zóna"
    )
@@ -2333,6 +2328,7 @@ MSG_HASH(
    "Zobraziť 'Adresár'"
    )
 
+
 /* Settings > User Interface > Appearance */
 
 
@@ -2426,6 +2422,17 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    "Vyrovnávacia pamäť"
    )
+
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_SYSTEM,
+   "Názov systému"
+   )
+#endif
 
 /* Music */
 

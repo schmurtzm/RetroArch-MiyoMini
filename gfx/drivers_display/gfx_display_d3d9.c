@@ -55,9 +55,11 @@ static const float *gfx_display_d3d9_get_default_tex_coords(void)
 
 static void *gfx_display_d3d9_get_default_mvp(void *data)
 {
-   static math_matrix_4x4 id;
-   matrix_4x4_identity(id);
-
+   static float id[] =         { 1.0f, 0.0f, 0.0f, 0.0f,
+                                 0.0f, 1.0f, 0.0f, 0.0f,
+                                 0.0f, 0.0f, 1.0f, 0.0f, 
+                                 0.0f, 0.0f, 0.0f, 1.0f
+                               };
    return &id;
 }
 
@@ -74,7 +76,7 @@ static INT32 gfx_display_prim_to_d3d9_enum(
          break;
    }
 
-   /* TOD/FIXME - hack */
+   /* TODO/FIXME - hack */
    return 0;
 }
 
@@ -145,9 +147,9 @@ static void gfx_display_d3d9_draw(gfx_display_ctx_draw_t *draw,
    color        = draw->coords->color;
 
    if (!vertex)
-      vertex    = gfx_display_d3d9_get_default_vertices();
+      vertex    = &d3d9_vertexes[0];
    if (!tex_coord)
-      tex_coord = gfx_display_d3d9_get_default_tex_coords();
+      tex_coord = &d3d9_tex_coords[0];
 
    for (i = 0; i < draw->coords->vertices; i++)
    {
@@ -194,9 +196,8 @@ static void gfx_display_d3d9_draw(gfx_display_ctx_draw_t *draw,
          0);
    matrix_4x4_multiply(m1, mop, m2);
    matrix_4x4_multiply(m2, d3d->mvp_transposed, m1);
-   d3d_matrix_transpose(&m1, &m2);
 
-   d3d9_set_mvp(d3d->dev, &m1);
+   d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const float*)&m2, 4);
 
    if (draw && draw->texture)
       gfx_display_d3d9_bind_texture(draw, d3d);

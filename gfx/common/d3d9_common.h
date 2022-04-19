@@ -105,18 +105,6 @@ typedef struct d3d9_video
    overlay_t *overlays;
 } d3d9_video_t;
 
-static INLINE bool d3d9_swap(void *data, LPDIRECT3DDEVICE9 dev)
-{
-#ifdef _XBOX
-   IDirect3DDevice9_Present(dev, NULL, NULL, NULL, NULL);
-#else
-   if (IDirect3DDevice9_Present(dev, NULL, NULL, NULL, NULL)
-         == D3DERR_DEVICELOST)
-      return false;
-#endif
-   return true;
-}
-
 void *d3d9_vertex_buffer_new(void *dev,
       unsigned length, unsigned usage, unsigned fvf,
       INT32 pool, void *handle);
@@ -127,10 +115,6 @@ static INLINE void *d3d9_vertex_buffer_lock(LPDIRECT3DVERTEXBUFFER9 vertbuf)
    if (!vertbuf)
       return NULL;
    IDirect3DVertexBuffer9_Lock(vertbuf, 0, 0, &buf, 0);
-
-   if (!buf)
-      return NULL;
-
    return buf;
 }
 
@@ -191,17 +175,6 @@ static INLINE void d3d9_texture_free(LPDIRECT3DTEXTURE9 tex)
 {
    if (tex)
       IDirect3DTexture9_Release(tex);
-}
-
-static INLINE void d3d9_set_transform(
-      LPDIRECT3DDEVICE9 dev,
-      D3DTRANSFORMSTATETYPE state,
-      CONST D3DMATRIX *matrix)
-{
-   /* XBox 360 D3D9 does not support fixed-function pipeline. */
-#ifndef _XBOX
-   IDirect3DDevice9_SetTransform(dev, state, matrix);
-#endif
 }
 
 static INLINE void d3d9_set_sampler_address_u(
@@ -276,16 +249,6 @@ static INLINE void d3d9_draw_primitive(
       return;
    IDirect3DDevice9_DrawPrimitive(dev, type, start, count);
    d3d9_end_scene(dev);
-}
-
-static INLINE void d3d9_clear(
-      LPDIRECT3DDEVICE9 dev,
-      unsigned count, const D3DRECT *rects, unsigned flags,
-      INT32 color, float z, unsigned stencil)
-{
-   if (dev)
-      IDirect3DDevice9_Clear(dev, count, rects, flags,
-            color, z, stencil);
 }
 
 static INLINE bool d3d9_lock_rectangle(
@@ -470,18 +433,14 @@ static INLINE void d3d9_set_render_state(
 
 static INLINE void d3d9_enable_blend_func(LPDIRECT3DDEVICE9 dev)
 {
-   if (!dev)
-      return;
-
-   d3d9_set_render_state(dev, D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
-   d3d9_set_render_state(dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-   d3d9_set_render_state(dev, D3DRS_ALPHABLENDENABLE, true);
+   IDirect3DDevice9_SetRenderState(dev, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+   IDirect3DDevice9_SetRenderState(dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   IDirect3DDevice9_SetRenderState(dev, D3DRS_ALPHABLENDENABLE, true);
 }
 
 static INLINE void d3d9_disable_blend_func(LPDIRECT3DDEVICE9 dev)
 {
-   if (dev)
-      d3d9_set_render_state(dev, D3DRS_ALPHABLENDENABLE, false);
+   IDirect3DDevice9_SetRenderState(dev, D3DRS_ALPHABLENDENABLE, false);
 }
 
 static INLINE void
@@ -492,30 +451,18 @@ d3d9_set_vertex_declaration(LPDIRECT3DDEVICE9 dev,
       IDirect3DDevice9_SetVertexDeclaration(dev, vertex_data);
 }
 
-static INLINE void d3d9_set_texture_stage_state(
-      LPDIRECT3DDEVICE9 dev,
-      unsigned sampler,
-      D3DTEXTURESTAGESTATETYPE type,
-      unsigned value)
-{
-#ifndef _XBOX
-   /* XBox 360 has no fixed-function pipeline. */
-   if (IDirect3DDevice9_SetTextureStageState(dev, sampler,
-            type, value) != D3D_OK)
-      RARCH_ERR("SetTextureStageState call failed, sampler"
-            ": %d, value: %d, type: %d\n", sampler, value, type);
-#endif
-}
-
 static INLINE void d3d9_enable_alpha_blend_texture_func(LPDIRECT3DDEVICE9 dev)
 {
    if (!dev)
       return;
 
    /* Also blend the texture with the set alpha value. */
-   d3d9_set_texture_stage_state(dev, 0, D3DTSS_ALPHAOP,     D3DTOP_MODULATE);
-   d3d9_set_texture_stage_state(dev, 0, D3DTSS_ALPHAARG1,   D3DTA_DIFFUSE);
-   d3d9_set_texture_stage_state(dev, 0, D3DTSS_ALPHAARG2,   D3DTA_TEXTURE);
+#ifndef _XBOX
+   /* XBox 360 has no fixed-function pipeline. */
+   IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+   IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
+   IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
+#endif
 }
 
 void d3d9_frame_postprocess(void *data);
@@ -611,12 +558,6 @@ static INLINE bool d3d9_surface_lock_rect(LPDIRECT3DSURFACE9 surf,
 #endif
 
    return true;
-}
-
-static INLINE void d3d9_surface_unlock_rect(LPDIRECT3DSURFACE9 surf)
-{
-   if (surf)
-      IDirect3DSurface9_UnlockRect(surf);
 }
 
 static INLINE bool d3d9_get_adapter_display_mode(
@@ -811,7 +752,78 @@ static INLINE void d3d9_convert_geometry(
    }
 }
 
-void d3d9_set_mvp(void *data, const void *userdata);
+void d3d9_make_d3dpp(d3d9_video_t *d3d,
+      const video_info_t *info, void *_d3dpp);
+
+void d3d9_calculate_rect(d3d9_video_t *d3d,
+      unsigned *width, unsigned *height,
+      int *x, int *y,
+      bool force_full,
+      bool allow_rotate);
+
+void d3d9_log_info(const struct LinkInfo *info);
+
+#ifdef HAVE_OVERLAY
+void d3d9_free_overlays(d3d9_video_t *d3d);
+#endif
+
+#if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
+void d3d9_free_overlay(d3d9_video_t *d3d, overlay_t *overlay);
+
+void d3d9_overlay_render(d3d9_video_t *d3d,
+      unsigned width,
+      unsigned height,
+      overlay_t *overlay, bool force_linear);
+#endif
+
+#if defined(HAVE_OVERLAY)
+void d3d9_get_overlay_interface(void *data,
+      const video_overlay_interface_t **iface);
+#endif
+
+void d3d9_set_rotation(void *data, unsigned rot);
+
+void d3d9_viewport_info(void *data, struct video_viewport *vp);
+
+bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle);
+
+bool d3d9_has_windowed(void *data);
+
+bool d3d9_suppress_screensaver(void *data, bool enable);
+
+bool d3d9_process_shader(d3d9_video_t *d3d);
+
+uintptr_t d3d9_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type);
+
+void d3d9_set_osd_msg(void *data,
+      const char *msg,
+      const void *params, void *font);
+
+void d3d9_unload_texture(void *data, 
+      bool threaded, uintptr_t id);
+
+void d3d9_set_video_mode(void *data,
+      unsigned width, unsigned height,
+      bool fullscreen);
+
+void d3d9_set_aspect_ratio(void *data, unsigned aspect_ratio_idx);
+
+void d3d9_set_menu_texture_frame(void *data,
+      const void *frame, bool rgb32, unsigned width, unsigned height,
+      float alpha);
+
+void d3d9_set_viewport(void *data,
+      unsigned width, unsigned height,
+      bool force_full,
+      bool allow_rotate);
+
+void d3d9_set_menu_texture_enable(void *data,
+      bool state, bool full_screen);
+
+void d3d9_apply_state_changes(void *data);
+
+extern LPDIRECT3D9 g_pD3D9;
 
 RETRO_END_DECLS
 
