@@ -13,6 +13,9 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#if defined(MIYOOMINI)
+#include "sdl_miyoomini_joypad.c"
+#else
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -800,3 +803,4 @@ input_device_driver_t sdl_dingux_joypad = {
    sdl_dingux_joypad_name,
    "sdl_dingux",
 };
+#endif

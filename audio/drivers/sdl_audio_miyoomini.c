@@ -13,9 +13,11 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-#if defined(MIYOOMINI)
-#include "sdl_audio_miyoomini.c"
-#else
+
+/*
+	SDL audio driver for miyoomini customSDL
+	Probably can be used with standard SDL as well, but not tested.
+*/
 
 #include <stdint.h>
 #include <stddef.h>
@@ -34,6 +36,8 @@
 #include "../audio_driver.h"
 #include "../../verbosity.h"
 
+#define SDL_AUDIO_SAMPLES 512
+
 typedef struct sdl_audio
 {
 #ifdef HAVE_THREADS
@@ -43,6 +47,7 @@ typedef struct sdl_audio
    fifo_buffer_t *buffer;
    bool nonblock;
    bool is_paused;
+   size_t bufsize;
 } sdl_audio_t;
 
 static void sdl_audio_cb(void *data, Uint8 *stream, int len)
@@ -55,18 +60,10 @@ static void sdl_audio_cb(void *data, Uint8 *stream, int len)
 #ifdef HAVE_THREADS
    scond_signal(sdl->cond);
 #endif
-
+#ifdef HAVE_SDL2
    /* If underrun, fill rest with silence. */
-   memset(stream + write_size, 0, len - write_size);
-}
-
-static INLINE int find_num_frames(int rate, int latency)
-{
-   int frames = (rate * latency) / 1000;
-
-   /* SDL only likes 2^n sized buffers. */
-
-   return next_pow2(frames);
+   if (len > (int)avail) memset(stream + write_size, 0, len - write_size);
+#endif
 }
 
 static void *sdl_audio_init(const char *device,
@@ -75,7 +72,6 @@ static void *sdl_audio_init(const char *device,
       unsigned *new_rate)
 {
    int frames;
-   size_t bufsize;
    SDL_AudioSpec out;
    SDL_AudioSpec spec           = {0};
    void *tmp                    = NULL;
@@ -100,16 +96,13 @@ static void *sdl_audio_init(const char *device,
    if (!sdl)
       return NULL;
 
-   /* We have to buffer up some data ourselves, so we let SDL
-    * carry approximately half of the latency.
-    *
-    * SDL double buffers audio and we do as well. */
-   frames        = find_num_frames(rate, latency / 4);
+   frames        = (latency * (rate - 1)) / (1000 * SDL_AUDIO_SAMPLES) + 1;
+   if (frames < 2) frames = 2; /* at least 2 frames */
 
    spec.freq     = rate;
    spec.format   = AUDIO_S16SYS;
    spec.channels = 2;
-   spec.samples  = frames; /* This is in audio frames, not samples ... :( */
+   spec.samples  = SDL_AUDIO_SAMPLES;
    spec.callback = sdl_audio_cb;
    spec.userdata = sdl;
 
@@ -127,20 +120,18 @@ static void *sdl_audio_init(const char *device,
 #endif
 
    RARCH_LOG("[SDL audio]: Requested %u ms latency, got %d ms\n",
-         latency, (int)(out.samples * 4 * 1000 / (*new_rate)));
+         latency, (int)(out.samples * frames * 1000 / (*new_rate)));
 
-   /* Create a buffer twice as big as needed and prefill the buffer. */
-   bufsize     = out.samples * 4 * sizeof(int16_t);
-   tmp         = calloc(1, bufsize);
-   sdl->buffer = fifo_new(bufsize);
+   /* Create a buffer twice as big as needed */
+   sdl->bufsize = out.samples * out.channels * sizeof(int16_t) * frames * 2;
+   sdl->buffer  = fifo_new(sdl->bufsize);
 
-   if (tmp)
-   {
-      fifo_write(sdl->buffer, tmp, bufsize);
-      free(tmp);
-   }
+   /* Allocate the null-buffer and prefill */
+   tmp = calloc(1, (sdl->bufsize / 2));
+   if (tmp) { fifo_write(sdl->buffer, tmp, (sdl->bufsize / 2)); free(tmp); }
 
    SDL_PauseAudio(0);
+
    return sdl;
 
 error:
@@ -175,7 +166,7 @@ static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
          SDL_LockAudio();
          avail = FIFO_WRITE_AVAIL(sdl->buffer);
 
-         if (avail == 0)
+         if (avail < (sdl->bufsize/2))
          {
             SDL_UnlockAudio();
 #ifdef HAVE_THREADS
@@ -201,33 +192,29 @@ static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
 static bool sdl_audio_stop(void *data)
 {
    sdl_audio_t *sdl = (sdl_audio_t*)data;
-   sdl->is_paused = true;
    SDL_PauseAudio(1);
+   sdl->is_paused = true;
    return true;
 }
 
 static bool sdl_audio_alive(void *data)
 {
    sdl_audio_t *sdl = (sdl_audio_t*)data;
-   if (!sdl)
-      return false;
    return !sdl->is_paused;
 }
 
 static bool sdl_audio_start(void *data, bool is_shutdown)
 {
    sdl_audio_t *sdl = (sdl_audio_t*)data;
-   sdl->is_paused = false;
-
    SDL_PauseAudio(0);
+   sdl->is_paused = false;
    return true;
 }
 
 static void sdl_audio_set_nonblock_state(void *data, bool state)
 {
    sdl_audio_t *sdl = (sdl_audio_t*)data;
-   if (sdl)
-      sdl->nonblock = state;
+   sdl->nonblock = state;
 }
 
 static void sdl_audio_free(void *data)
@@ -236,14 +223,11 @@ static void sdl_audio_free(void *data)
 
    SDL_CloseAudio();
 
-   if (sdl)
-   {
-      fifo_free(sdl->buffer);
+   fifo_free(sdl->buffer);
 #ifdef HAVE_THREADS
-      slock_free(sdl->lock);
-      scond_free(sdl->cond);
+   slock_free(sdl->lock);
+   scond_free(sdl->cond);
 #endif
-   }
    free(sdl);
 }
 
@@ -255,9 +239,17 @@ static bool sdl_audio_use_float(void *data)
 
 static size_t sdl_audio_write_avail(void *data)
 {
-   /* stub */
-   (void)data;
-   return 0;
+   sdl_audio_t *sdl = (sdl_audio_t*)data;
+   SDL_LockAudio();
+   size_t avail = FIFO_WRITE_AVAIL(sdl->buffer);
+   SDL_UnlockAudio();
+   return avail;
+}
+
+static size_t sdl_audio_buffer_size(void *data)
+{
+   sdl_audio_t *sdl = (sdl_audio_t*)data;
+   return sdl->bufsize;
 }
 
 audio_driver_t audio_sdl = {
@@ -277,6 +269,5 @@ audio_driver_t audio_sdl = {
    NULL,
    NULL,
    sdl_audio_write_avail,
-   NULL
+   sdl_audio_buffer_size,
 };
-#endif

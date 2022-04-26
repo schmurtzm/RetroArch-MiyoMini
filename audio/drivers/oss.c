@@ -13,6 +13,10 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#if defined(MIYOOMINI)
+#include "oss_miyoomini.c"
+#else
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -228,3 +232,4 @@ audio_driver_t audio_oss = {
    oss_write_avail,
    oss_buffer_size,
 };
+#endif
