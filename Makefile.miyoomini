@@ -113,7 +113,7 @@ DEF_FLAGS += -ffunction-sections -fdata-sections
 DEF_FLAGS += -I. -Ideps -Ideps/stb -DMIYOOMINI -DDINGUX -MMD
 DEF_FLAGS += -Wall -Wno-unused-variable $(LTO)
 DEF_FLAGS += -std=gnu99 -D_GNU_SOURCE
-LIBS := -ldl -lz -lrt -pthread -lmi_sys -lmi_gfx -lmi_ao
+LIBS := -ldl -lz -lrt -pthread -lmi_sys -lmi_gfx -lmi_ao -lcam_os_wrapper
 CFLAGS := 
 CXXFLAGS := -fno-exceptions -fno-rtti -std=c++11 -D__STDC_CONSTANT_MACROS
 ASFLAGS :=
