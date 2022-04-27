@@ -559,9 +559,7 @@ static void sdl_miyoomini_set_output(
    uint32_t mul_int = (mul>>16);
 
    /* Change to aspect/fullscreen scaler when integer & screen size is over (no crop) */
-   if ( (vid->scale_integer) && (!mul_int) ) vid->scale_integer = false;
-
-   if (vid->scale_integer) {
+   if (vid->scale_integer && mul_int) {
       /* Integer Scaling */
       vid->video_w = width * mul_int;
       vid->video_h = height * mul_int;
@@ -601,7 +599,7 @@ static void sdl_miyoomini_set_output(
 
    /* Select scaler to use */
    uint32_t scale_mul = 0;
-   if ( (vid->filter_type != DINGUX_IPU_FILTER_NEAREST) || (vid->scale_integer && vid->keep_aspect) ) {
+   if ( (vid->filter_type != DINGUX_IPU_FILTER_NEAREST) || (vid->scale_integer && mul_int && vid->keep_aspect) ) {
       scale_mul = 1;
       if ( (vid->scale_integer) || (vid->filter_type == DINGUX_IPU_FILTER_BICUBIC) ) {
          if      (mul >= (640<<16)/256) scale_mul = 4; /* w <= 256 & h <= 192 */

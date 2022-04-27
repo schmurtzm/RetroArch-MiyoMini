@@ -1,0 +1,6 @@
+#!/bin/sh
+CROSS_COMPILE="/opt/miyoomini83/bin/arm-linux-gnueabihf-"
+CFLAGS="-Ofast -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -march=armv7ve+simd"
+${CROSS_COMPILE}gcc -o normal3x.so normal3x.c ${CFLAGS} -std=c99 -shared -fPIC -Wall -s
+${CROSS_COMPILE}gcc -o lcd2x.so lcd2x.c ${CFLAGS} -std=c99 -shared -fPIC -Wall -s
+${CROSS_COMPILE}gcc -o lcd3x.so lcd3x.c ${CFLAGS} -std=c99 -shared -fPIC -Wall -s
