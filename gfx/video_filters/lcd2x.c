@@ -116,10 +116,9 @@ static void lcd2x_c16(void* __restrict src, void* __restrict dst, uint32_t sw, u
 		for (x=dx=0; x<(sw/2); x++, dx+=2) {
 			pix = s[x];
 			dpix1=(pix & 0xF800) | ((pix & 0x001F)<<16);		// RB
-			dpix2=(pix & 0x07E0) | ((pix & 0xFFFF)<<16);		// GP
-			pix >>= 16;
-			dpix3=(pix & 0xF800) | ((pix & 0x001F)<<16);		// rb
-			dpix4=(pix & 0x07E0) | (pix<<16);			// gp
+			dpix2=(pix & 0x07E0) | (pix<<16);			// GP
+			dpix3=((pix>>16) & 0xF800) | (pix & 0x001F0000);	// rb
+			dpix4=((pix>>16) & 0x07E0) | (pix & 0xFFFF0000);	// gp
 			d[dx] = dpix1; d[dx+1] = dpix3;
 			d[dx+dp32] = dpix2; d[dx+dp32+1] = dpix4;
 		}

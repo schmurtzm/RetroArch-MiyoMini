@@ -77,6 +77,7 @@ struct sdl_miyoomini_video
    unsigned video_y;
    unsigned video_w;
    unsigned video_h;
+   unsigned rotate;
    bool rgb32;
    bool menu_active;
    bool was_in_menu;
@@ -551,6 +552,7 @@ static void sdl_miyoomini_set_output(
       unsigned width, unsigned height, bool rgb32) {
    vid->content_width  = width;
    vid->content_height = height;
+   if (vid->rotate & 1) { width = vid->content_height; height = vid->content_width; }
 
    /* Calculate scaling factor */
    uint32_t xmul = (SDL_MIYOOMINI_WIDTH<<16) / width;
@@ -602,12 +604,12 @@ static void sdl_miyoomini_set_output(
    if ( (vid->filter_type != DINGUX_IPU_FILTER_NEAREST) || (vid->scale_integer && mul_int && vid->keep_aspect) ) {
       scale_mul = 1;
       if ( (vid->scale_integer) || (vid->filter_type == DINGUX_IPU_FILTER_BICUBIC) ) {
-         if      (mul >= (640<<16)/256) scale_mul = 4; /* w <= 256 & h <= 192 */
-         else if (mul >= (640<<16)/512) scale_mul = 2; /* w <= 512 & h <= 384 */
+         if      ((xmul > ymul ? xmul : ymul) >= (640<<16)/256) scale_mul = 4; /* w <= 256 or h <= 192 */
+         else if ((xmul > ymul ? xmul : ymul) >= (640<<16)/512) scale_mul = 2; /* w <= 512 or h <= 384 */
       }
    }
-   vid->frame_width  = scale_mul ? width  * scale_mul : vid->video_w;
-   vid->frame_height = scale_mul ? height * scale_mul : vid->video_h;
+   vid->frame_width  = scale_mul ? vid->content_width  * scale_mul : vid->video_w;
+   vid->frame_height = scale_mul ? vid->content_height * scale_mul : vid->video_h;
 
    switch (scale_mul) {
       case 0:
@@ -625,7 +627,7 @@ static void sdl_miyoomini_set_output(
    }
 
 /* for DEBUG
-   fprintf(stderr,"cw:%d ch:%d fw:%d fh:%d x:%d y:%d w:%d h:%d mul:%f scale_mul:%d\n",width,height,
+   fprintf(stderr,"cw:%d ch:%d fw:%d fh:%d x:%d y:%d w:%d h:%d mul:%f scale_mul:%d\n",vid->content_width,vid->content_height,
          vid->frame_width,vid->frame_height,vid->video_x,vid->video_y,vid->video_w,vid->video_h,(float)mul/(1<<16),scale_mul);
 */
 
@@ -683,7 +685,6 @@ static void *sdl_miyoomini_gfx_init(const video_info_t *video,
    vid->menu_active       = false;
    vid->was_in_menu       = false;
    vid->quitting          = false;
-   vid->last_frame_time   = 0;
    vid->ff_frame_time_min = 16667;
 
    sdl_miyoomini_set_output(vid, vid->content_width, vid->content_height, vid->rgb32);
@@ -780,7 +781,9 @@ static bool sdl_miyoomini_gfx_frame(void *data, const void *frame,
       GFX_UpdateRect(vid->screen, vid->video_x, vid->video_y, vid->video_w, vid->video_h);
    } else {
       scale2x_n16(vid->menuscreen_rgui->pixels, vid->menuscreen->pixels, RGUI_MENU_WIDTH, RGUI_MENU_HEIGHT, 0,0);
+      stOpt.eRotate = E_MI_GFX_ROTATE_180;
       GFX_Flip(vid->menuscreen);
+      stOpt.eRotate = vid->rotate;
    }
    return true;
 }
@@ -848,6 +851,25 @@ static bool sdl_miyoomini_gfx_alive(void *data) {
 static bool sdl_miyoomini_gfx_focus(void *data) { return true; }
 static bool sdl_miyoomini_gfx_suppress_screensaver(void *data, bool enable) { return false; }
 static bool sdl_miyoomini_gfx_has_windowed(void *data) { return false; }
+
+static void sdl_miyoomini_gfx_set_rotation(void *data, unsigned rotation) {
+   sdl_miyoomini_video_t *vid = (sdl_miyoomini_video_t*)data;
+   if (unlikely(!vid)) return;
+   switch (rotation) {
+      case 1:
+         stOpt.eRotate = E_MI_GFX_ROTATE_270; break;
+      case 2:
+         stOpt.eRotate = E_MI_GFX_ROTATE_0; break;
+      case 3:
+         stOpt.eRotate = E_MI_GFX_ROTATE_90; break;
+      default:
+         stOpt.eRotate = E_MI_GFX_ROTATE_180; break;
+   }
+   if (vid->rotate != stOpt.eRotate) {
+      vid->rotate = stOpt.eRotate;
+      sdl_miyoomini_set_output(vid, vid->content_width, vid->content_height, vid->rgb32);
+   }
+}
 
 static void sdl_miyoomini_gfx_viewport_info(void *data, struct video_viewport *vp) {
    sdl_miyoomini_video_t *vid = (sdl_miyoomini_video_t*)data;
@@ -949,7 +971,7 @@ video_driver_t video_sdl_dingux = {
    sdl_miyoomini_gfx_free,
    "sdl_dingux",
    NULL, /* set_viewport */
-   NULL, /* set_rotation */ /* TODO: Make this effective */
+   sdl_miyoomini_gfx_set_rotation,
    sdl_miyoomini_gfx_viewport_info,
    NULL, /* read_viewport  */
    NULL, /* read_frame_raw */

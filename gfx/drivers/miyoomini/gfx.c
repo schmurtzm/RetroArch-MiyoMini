@@ -630,10 +630,12 @@ void	GFX_UpdateRectExec(SDL_Surface *screen, int x, int y, int w, int h, uint32_
 		if (x|y|w|h) {
 			if (!sHWsurface) {
 				MI_GFX_Rect_t DstRectPush = stDstRect;
-				stDstRect.s32Xpos = 640-(x+w);	// for rotate180
-				stDstRect.s32Ypos = 480-(y+h);	// 
-				stDstRect.u32Width = w;
-				stDstRect.u32Height = h;
+				// for rotate180
+				stDstRect.s32Xpos = 640-(x+w);
+				stDstRect.s32Ypos = 480-(y+h);
+				// for RetroArch rotate function
+				stDstRect.u32Width = (stOpt.eRotate&1) ? h : w;
+				stDstRect.u32Height = (stOpt.eRotate&1) ? w : h;
 				GFX_FlipExec(screen, flags);
 				stDstRect = DstRectPush;
 			} else if (screen != sHWsurface) {
@@ -896,7 +898,7 @@ void GFX_BlitSurfaceExec(SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, 
 		}
 
 		FlushCacheNeeded(src->pixels, src->pitch, SrcRect.s32Ypos, SrcRect.u32Height);
-		if (rotate & 1) FlushCacheNeeded(dst->pixels, dst->pitch, DstRect.s32Xpos, DstRect.u32Width);
+		if (rotate & 1) FlushCacheNeeded(dst->pixels, dst->pitch, DstRect.s32Ypos, DstRect.u32Width);
 		else FlushCacheNeeded(dst->pixels, dst->pitch, DstRect.s32Ypos, DstRect.u32Height);
 		MI_GFX_BitBlit(&Src, &SrcRect, &Dst, &DstRect, &Opt, &Fence);
 		if (!nowait) MI_GFX_WaitAllDone(FALSE, Fence);
