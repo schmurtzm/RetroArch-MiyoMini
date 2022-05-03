@@ -31,31 +31,41 @@ Recommended settings:
 - Bilinear	   : If you want to increase the performance as much as possible even if the screen is blurry
 - Nearest Neighbor : If you want to make pixels crisp anyway even if the size of each pixels are distorted
 
-From 220427 version, Settings > Video > Synchronization > VSync settings setting is activated
-Recommended to be OFF if audio driver is oss, or ON if it is sdl
+Settings > Video > Synchronization > VSync settings setting is activated from 220427 version
+Turn ON if the audio driver is sdl/oss and judder is a concern
+
+Settings > Video > Output > Video Rotation is activated from 220430 version
+To display this option, Settings > User Interface > Show Advanced Settings must be turned on
+
+Allows VideoFilter to be added later, Normal3x / LCD2x / LCD3x are included as samples (sources are in gfx/video_filters)
+LCD filters should always be used with Integer:ON Aspect:ON on emulators
+ up to 320pixels width for 2x (for gba,ws,etc.) and up to 213pixels width for 3x (for gb,gg,ngp,etc.)
 
 ## Audio
 
-There are two drivers: oss and sdl
+There are three drivers: audioio, oss and sdl
 
-oss: Although the name oss is used, the MI_AO driver is actually used instead of oss
-     Latency can be adjusted in 1ms increments, stabilizing FPS and reducing judder
+audioio:Directly controls audio hardware of miyoomini(MI_AO)
+	Latency can be adjusted in 1ms increments, stabilizing FPS and reducing judder
+	However this driver cannot be used with OFW 220419's audioserver (need to turn OFF the AudioFix setting)
 
-sdl: Use custom SDL, latancy changes from a minimum of 21 ms in increments of about 10 ms
-     Timing is a little rough, that makes fast forwarding is a little faster than oss
+oss:	Modified OSS driver exclusively for miyoomini
+	Latency is not adjustable due to the miyoomini oss spec, and the default is very high latency of about 340ms
+	However, using audioserver with latency_reduction(described below), the latency becomes almost imperceptible
 
-The latency default is 64 ms, a comfortable value with either driver
+sdl:	customSDL is used when AudioFix:OFF, stockSDL is used when AudioFix:ON
+	latancy changes from a minimum of 21 ms in increments of about 10 ms
+	Timing is a little rough, that makes judder a bit but slightly faster
+	Recommended to turn ON the VSync setting for Video (reduces judder)
 
-From 220423 version, audioserver, a new feature of OFW 220419, is supported
-To play sound with AudioFix:ON, set audio driver to sdl and latancy to at least 96ms
+The latency default is 64 ms, a comfortable value with all drivers
 
-However, due to the audioserver specifications, the actual latancy is 340ms(fixed) + setting value, which is quite laggy,
-and it also increases judder when scrolling, so it is not recommended unless you really dislike popping sounds
+audioserver, a new feature of OFW 220419, is supported from 220423 version
+To play sound with AudioFix:ON, set audio driver to oss or sdl and latancy to at least 96ms in case of sdl
 
-A solution to this latency problem is available now (latency_reduction.zip)
-With this, the latency setting can be lower than 96ms
-
-When using sdl driver, it is recommended to turn ON the VSync setting for Video (reduces judder)
+However, due to the audioserver spec, the actual latancy is 340ms(fixed) + setting value, which is quite laggy,
+and it also increases judder when scrolling, but a solution to this latency problem is available now (latency_reduction.zip)
+With this, the latency setting can be lower than 96ms, read the readme in the zip for instructions on how to use
 
 ## Input, Rumble
 

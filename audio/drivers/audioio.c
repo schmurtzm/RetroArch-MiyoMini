@@ -13,6 +13,10 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#if defined(MIYOOMINI)
+#include "audioio_miyoomini.c"
+#else
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -210,3 +214,5 @@ audio_driver_t audio_audioio = {
    audioio_write_avail,
    audioio_buffer_size,
 };
+
+#endif

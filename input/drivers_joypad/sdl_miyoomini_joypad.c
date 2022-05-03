@@ -308,6 +308,7 @@ static void sdl_miyoomini_joypad_poll(void) {
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_L3);
                   break;
                case SDL_MIYOOMINI_SDLK_R3:
+               case SDLK_UNKNOWN:	// for stockSDL POWER button
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_R3);
                   break;
                case SDL_MIYOOMINI_SDLK_UP:
@@ -369,6 +370,7 @@ static void sdl_miyoomini_joypad_poll(void) {
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_L3);
                   break;
                case SDL_MIYOOMINI_SDLK_R3:
+               case SDLK_UNKNOWN:	// for stockSDL POWER button
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_R3);
                   break;
                case SDL_MIYOOMINI_SDLK_UP:

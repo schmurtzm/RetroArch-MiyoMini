@@ -857,11 +857,11 @@ static void sdl_miyoomini_gfx_set_rotation(void *data, unsigned rotation) {
    if (unlikely(!vid)) return;
    switch (rotation) {
       case 1:
-         stOpt.eRotate = E_MI_GFX_ROTATE_270; break;
+         stOpt.eRotate = E_MI_GFX_ROTATE_90; break;
       case 2:
          stOpt.eRotate = E_MI_GFX_ROTATE_0; break;
       case 3:
-         stOpt.eRotate = E_MI_GFX_ROTATE_90; break;
+         stOpt.eRotate = E_MI_GFX_ROTATE_270; break;
       default:
          stOpt.eRotate = E_MI_GFX_ROTATE_180; break;
    }

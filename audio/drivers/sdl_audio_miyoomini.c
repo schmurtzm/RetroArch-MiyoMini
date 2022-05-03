@@ -15,8 +15,8 @@
  */
 
 /*
-	SDL audio driver for miyoomini customSDL
-	Probably can be used with standard SDL as well, but not tested.
+      SDL audio driver for miyoomini customSDL
+      Can be used with standard SDL as well
 */
 
 #include <stdint.h>
