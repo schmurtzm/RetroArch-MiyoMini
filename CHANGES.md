@@ -2,10 +2,12 @@
 
 # 1.10.3
 - ANDROID: Decouple Play Core dependency to bring app into compliance for F-Droid
+- ANDROID: Allow audio playback capture on android
 - AI/SERVICE: Disable AI Service setting by default
 - BLUETOOTH/LAKKA: bluetoothctl: add / modify pairing steps
 - CHEEVOS: Disallow manual frame delay setting in Hardcore Mode
-- DATABASE: Serial scanning for Wii now includes WBFS 
+- DATABASE: Serial scanning for Wii now includes WBFS
+- INPUT: Allow proper descriptor declaration for analog triggers
 - INPUT/MAPPING: Fix offset + crash when clearing input port binds
 - INPUT/MAPPING: Fix saving of 'Analog to Digital Type' when configuration overrides are used
 - INPUT/MAPPING: Fix saving of 'Analog to Digital Type' when configuration overrides are used

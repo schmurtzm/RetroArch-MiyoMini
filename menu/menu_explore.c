@@ -15,17 +15,20 @@
  */
 
 #include <stddef.h>
-#include "menu_driver.h"
-#include "menu_cbs.h"
-#include "../retroarch.h"
-#include "../configuration.h"
-#include "../playlist.h"
-#include "../libretro-db/libretrodb.h"
-#include "../tasks/tasks_internal.h"
+
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
 #include <array/rbuf.h>
 #include <array/rhmap.h>
+
+#include "menu_driver.h"
+#include "menu_cbs.h"
+#include "../retroarch.h"
+#include "../configuration.h"
+#include "../file_path_special.h"
+#include "../playlist.h"
+#include "../libretro-db/libretrodb.h"
+#include "../tasks/tasks_internal.h"
 
 #define EX_ARENA_ALIGNMENT 8
 #define EX_ARENA_BLOCK_SIZE (64 * 1024)
@@ -376,12 +379,14 @@ static void explore_load_icons(explore_state_t *state)
    if (!state)
       return;
 
-   system_count = RBUF_LEN(state->by[EXPLORE_BY_SYSTEM]);
+   if ((system_count = RBUF_LEN(state->by[EXPLORE_BY_SYSTEM])) <= 0)
+      return;
 
    /* unload any icons that could exist from a previous call to this */
    explore_unload_icons(state);
 
-   /* RBUF_RESIZE leaves memory uninitialised, have to zero it 'manually' */
+   /* RBUF_RESIZE leaves memory uninitialised, 
+      have to zero it 'manually' */
    RBUF_RESIZE(state->icons, system_count);
    memset(state->icons, 0, RBUF_SIZEOF(state->icons));
 
@@ -478,7 +483,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
       if (!fext || strcasecmp(fext, ".lpl"))
          continue;
 
-      fill_pathname_join(playlist_config.path,
+      fill_pathname_join_special(playlist_config.path,
             directory_playlist, fname, sizeof(playlist_config.path));
       playlist_config.capacity          = COLLECTION_SIZE;
       playlist                          = playlist_init(&playlist_config);
@@ -517,23 +522,35 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
          rdb_num = RHMAP_GET(rdb_indices, rdb_hash);
          if (!rdb_num)
          {
-            struct explore_rdb newrdb;
             size_t systemname_len;
+            struct explore_rdb newrdb;
+            char *ext_path        = NULL;
 
             newrdb.handle         = libretrodb_new();
             newrdb.count          = 0;
             newrdb.playlist_crcs  = NULL;
             newrdb.playlist_names = NULL;
 
-            systemname_len = db_ext - db_name;
+            systemname_len        = db_ext - db_name;
             if (systemname_len >= sizeof(newrdb.systemname))
                systemname_len = sizeof(newrdb.systemname)-1;
             memcpy(newrdb.systemname, db_name, systemname_len);
             newrdb.systemname[systemname_len] = '\0';
 
-            fill_pathname_join_noext(
+            fill_pathname_join_special(
                   tmp, directory_database, db_name, sizeof(tmp));
-            strlcat(tmp, ".rdb", sizeof(tmp));
+
+            /* Replace the extension - change 'lpl' to 'rdb' */
+            if ((    ext_path = path_get_extension_mutable(tmp)) 
+                  && ext_path[0] == '.'
+                  && ext_path[1] == 'l'
+                  && ext_path[2] == 'p'
+                  && ext_path[3] == 'l')
+            {
+               ext_path[1] = 'r';
+               ext_path[2] = 'd';
+               ext_path[3] = 'b';
+            }
 
             if (libretrodb_open(tmp, newrdb.handle) != 0)
             {
@@ -753,7 +770,9 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
 
       RHMAP_FREE(cat_maps[i]);
    }
-   qsort(explore->entries,
+   /* NULL is not a valid value as a first argument for qsort */
+   if (explore->entries)
+      qsort(explore->entries,
          RBUF_LEN(explore->entries),
          sizeof(*explore->entries), explore_qsort_func_entries);
    return explore;
@@ -799,7 +818,10 @@ static int explore_action_sublabel_spacer(
     *   unnecessarily blank out the fallback
     *   core title text in the sublabel area */
    if (string_is_equal(menu_driver, "ozone"))
-      strlcpy(s, " ", len);
+   {
+      s[0] = ' ';
+      s[1] = '\0';
+   }
 
    return 1; /* 1 means it'll never change and can be cached */
 }

@@ -281,6 +281,7 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/streams/file_stream_transforms.o \
        $(LIBRETRO_COMM_DIR)/streams/interface_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/memory_stream.o \
+       $(LIBRETRO_COMM_DIR)/streams/network_stream.o \
        $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.o
 
 OBJ += \
@@ -304,10 +305,6 @@ ifneq ($(findstring BSD,$(OS)),)
 	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.o
 else ifneq ($(findstring Darwin,$(OS)),)
 	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.o
-endif
-
-ifeq ($(TARGET), retroarch_orbis)
-	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_orbis.o
 endif
 
 OBJ += \
@@ -475,7 +472,8 @@ ifeq ($(HAVE_LANGEXTRA), 1)
           intl/msg_hash_sv.o \
           intl/msg_hash_uk.o \
           intl/msg_hash_cs.o \
-          intl/msg_hash_val.o 
+          intl/msg_hash_val.o \
+          intl/msg_hash_ca.o
 endif
 
 ifneq ($(HAVE_GETOPT_LONG), 1)
@@ -535,17 +533,10 @@ ifeq ($(HAVE_QT), 1)
    MOC_HEADERS += ui/drivers/ui_qt.h \
                   ui/drivers/qt/ui_qt_load_core_window.h \
                   ui/drivers/qt/gridview.h \
-                  ui/drivers/qt/coreoptionsdialog.h \
-                  ui/drivers/qt/filedropwidget.h \
-                  ui/drivers/qt/coreinfodialog.h \
-                  ui/drivers/qt/playlistentrydialog.h \
-                  ui/drivers/qt/viewoptionsdialog.h
+                  ui/drivers/qt/qt_dialogs.h \
+                  ui/drivers/qt/qt_widgets.h
    ifeq ($(HAVE_MENU), 1)
-   ifeq ($(HAVE_SHADERS_COMMON), 1)
-      MOC_HEADERS += ui/drivers/qt/shaderparamsdialog.h
-   endif
-      MOC_HEADERS += ui/drivers/qt/settingswidgets.h \
-                     ui/drivers/qt/qt_options.h
+      MOC_HEADERS += ui/drivers/qt/qt_options.h
    endif
 
    DEFINES += -DHAVE_MAIN
@@ -979,6 +970,7 @@ OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.o \
        $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.o
 
 ifeq ($(HAVE_RWAV), 1)
+DEFINES += -DHAVE_RWAV
 OBJ += $(LIBRETRO_COMM_DIR)/formats/wav/rwav.o
 endif
 
@@ -1742,7 +1734,8 @@ ifeq ($(HAVE_D3D9), 1)
    OBJ  += gfx/drivers_font/d3d_w32_font.o
    ifeq ($(HAVE_CG), 1)
       LIBS += -lcgD3D9
-      OBJ  += gfx/drivers_renderchain/d3d9_cg_renderchain.o
+      OBJ  += gfx/drivers/d3d9cg.o
+      OBJ  += gfx/drivers_display/gfx_display_d3d9cg.o
    endif
 endif
 
@@ -1812,9 +1805,7 @@ endif
 
 ifeq ($(HAVE_D3D9), 1)
    DEFINES += -DHAVE_D3D9
-   OBJ += gfx/drivers/d3d9.o
    OBJ += gfx/common/d3d9_common.o
-	OBJ += gfx/drivers_display/gfx_display_d3d9.o
 endif
 
 ifeq ($(HAVE_D3D_COMMON), 1)
@@ -1835,7 +1826,8 @@ endif
 
 ifeq ($(HAVE_HLSL),1)
    DEFINES += -DHAVE_HLSL
-   OBJ += gfx/drivers_renderchain/d3d9_hlsl_renderchain.o
+   OBJ += gfx/drivers/d3d9hlsl.o
+   OBJ += gfx/drivers_display/gfx_display_d3d9hlsl.o
 endif
 
 ifeq ($(HAVE_SLANG),1)
@@ -1880,7 +1872,6 @@ ifeq ($(HAVE_BUILTINGLSLANG), 1)
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
       $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/ossource.cpp
-
    ifneq ($(findstring Win32,$(OS)),)
       DEFINES += -DENABLE_HLSL
       GLSLANG_SOURCES += $(wildcard $(DEPS_DIR)/glslang/glslang/hlsl/*.cpp)
@@ -1901,6 +1892,7 @@ endif
 
 ifeq ($(HAVE_GLSLANG_COMMON), 1)
    DEFINES += -DHAVE_GLSLANG
+   OBJ += $(GLSLANG_SOURCES_C:.c=.o)
    OBJ += $(GLSLANG_SOURCES:.cpp=.o)
 endif
 
@@ -2113,8 +2105,8 @@ ifeq ($(HAVE_NETWORKING), 1)
           $(LIBRETRO_COMM_DIR)/net/net_http.o \
           $(LIBRETRO_COMM_DIR)/net/net_http_parse.o \
           $(LIBRETRO_COMM_DIR)/net/net_socket.o \
-          $(LIBRETRO_COMM_DIR)/net/net_natt.o \
           core_updater_list.o \
+          network/natt.o \
           network/net_http_special.o \
           tasks/task_http.o \
           tasks/task_netplay_lan_scan.o \
@@ -2132,7 +2124,8 @@ ifeq ($(HAVE_NETWORKING), 1)
       OBJ += $(LIBRETRO_COMM_DIR)/net/net_socket_ssl_mbed.o
    endif
 
-   ifneq ($(HAVE_SOCKET_LEGACY),1)
+   ifeq ($(HAVE_IFINFO), 1)
+      DEFINES += -DHAVE_IFINFO
       OBJ += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
    endif
 
@@ -2397,7 +2390,8 @@ ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
           gfx/video_filters/upscale_1_5x.o \
           gfx/video_filters/upscale_256x_320x240.o \
           gfx/video_filters/picoscale_256x_320x240.o \
-          gfx/video_filters/upscale_240x160_320x240.o
+          gfx/video_filters/upscale_240x160_320x240.o \
+          gfx/video_filters/upscale_mix_240x160_320x240.o
 endif
 
 ifeq ($(WANT_IOSUHAX), 1)
@@ -2440,6 +2434,10 @@ endif
 
 ifneq ($(findstring Win32,$(OS)),)
    OBJ += led/drivers/led_win32_keyboard.o
+endif
+
+ifeq ($(HAVE_X11), 1)
+   OBJ += led/drivers/led_x11_keyboard.o
 endif
 
 ifeq ($(HAVE_VITAGLES), 1)
