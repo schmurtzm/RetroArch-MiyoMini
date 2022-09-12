@@ -2,9 +2,9 @@
 
 name: Crowdin Daily Workflow
 
-on:
-  schedule:
-    - cron: '0 0 * * *'  # every day at midnight
+#on:
+#  schedule:
+#    - cron: '0 0 * * *'  # every day at midnight
 
 permissions:
   contents: read
