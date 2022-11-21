@@ -126,7 +126,7 @@
 static int ra_clock_gettime(int clk_ik, struct timespec *t)
 {
    struct timeval now;
-   int rv = gettimeofday(&now, NULL);
+   int rv     = gettimeofday(&now, NULL);
    if (rv)
       return rv;
    t->tv_sec  = now.tv_sec;
@@ -184,7 +184,7 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
 #elif !defined(__MACH__) && (defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__) || defined(__PSL1GHT__) || defined(__PPC64__) || defined(__powerpc64__))
    time_ticks = __mftb();
 #elif (defined(_POSIX_MONOTONIC_CLOCK) && _POSIX_MONOTONIC_CLOCK > 0) || defined(__QNX__) || defined(ANDROID)
-   struct timespec tv = {0};
+   struct timespec tv;
    if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
       time_ticks = (retro_perf_tick_t)tv.tv_sec * 1000000000 +
          (retro_perf_tick_t)tv.tv_nsec;
@@ -251,7 +251,7 @@ retro_time_t cpu_features_get_time_usec(void)
 #elif defined(_3DS)
    return osGetTime() * 1000;
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__)
-   struct timespec tv = {0};
+   struct timespec tv;
    if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
       return 0;
    return tv.tv_sec * INT64_C(1000000) + (tv.tv_nsec + 500) / 1000;
@@ -627,17 +627,12 @@ uint64_t cpu_features_get(void)
    size_t len          = sizeof(size_t);
 
    if (sysctlbyname("hw.optional.floatingpoint", NULL, &len, NULL, 0) == 0)
-   {
       cpu |= RETRO_SIMD_CMOV;
-   }
 
 #if defined(CPU_X86)
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.mmx", NULL, &len, NULL, 0) == 0)
-   {
-      cpu |= RETRO_SIMD_MMX;
-      cpu |= RETRO_SIMD_MMXEXT;
-   }
+      cpu |= RETRO_SIMD_MMX | RETRO_SIMD_MMXEXT;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.sse", NULL, &len, NULL, 0) == 0)
@@ -693,9 +688,7 @@ uint64_t cpu_features_get(void)
       cpu |= RETRO_SIMD_VFPV4;
 #endif
 #elif defined(_XBOX1)
-   cpu |= RETRO_SIMD_MMX;
-   cpu |= RETRO_SIMD_SSE;
-   cpu |= RETRO_SIMD_MMXEXT;
+   cpu |= RETRO_SIMD_MMX | RETRO_SIMD_SSE | RETRO_SIMD_MMXEXT;
 #elif defined(CPU_X86)
    unsigned max_flag   = 0;
    int flags[4];
@@ -729,12 +722,9 @@ uint64_t cpu_features_get(void)
    if (flags[3] & (1 << 23))
       cpu |= RETRO_SIMD_MMX;
 
+   /* SSE also implies MMXEXT (according to FFmpeg source). */
    if (flags[3] & (1 << 25))
-   {
-      /* SSE also implies MMXEXT (according to FFmpeg source). */
-      cpu |= RETRO_SIMD_SSE;
-      cpu |= RETRO_SIMD_MMXEXT;
-   }
+      cpu |= RETRO_SIMD_SSE | RETRO_SIMD_MMXEXT;
 
    if (flags[3] & (1 << 26))
       cpu |= RETRO_SIMD_SSE2;

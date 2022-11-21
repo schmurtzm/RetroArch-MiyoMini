@@ -1496,11 +1496,11 @@ error:
 static uint64_t udev_input_get_capabilities(void *data)
 {
    return
-      (1 << RETRO_DEVICE_JOYPAD)   |
-      (1 << RETRO_DEVICE_ANALOG)   |
-      (1 << RETRO_DEVICE_KEYBOARD) |
-      (1 << RETRO_DEVICE_MOUSE)    |
-      (1 << RETRO_DEVICE_LIGHTGUN);
+        (1 << RETRO_DEVICE_JOYPAD)
+      | (1 << RETRO_DEVICE_ANALOG)
+      | (1 << RETRO_DEVICE_KEYBOARD)
+      | (1 << RETRO_DEVICE_MOUSE)
+      | (1 << RETRO_DEVICE_LIGHTGUN);
 }
 
 static void udev_input_grab_mouse(void *data, bool state)
@@ -1540,8 +1540,9 @@ input_driver_t input_udev = {
    "udev",
    udev_input_grab_mouse,
 #ifdef __linux__
-   linux_terminal_grab_stdin
+   linux_terminal_grab_stdin,
 #else
-   NULL
+   NULL,
 #endif
+   NULL
 };

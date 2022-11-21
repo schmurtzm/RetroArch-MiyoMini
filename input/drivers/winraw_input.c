@@ -410,7 +410,7 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
        * break multiple mice positions */
       bool getcursorpos = (mouse->device == RETRO_DEVICE_POINTER) ? true : false;
 #ifdef HAVE_MENU
-      if (menu_state_get_ptr()->alive)
+      if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
          getcursorpos = true;
 #endif
 
@@ -1052,12 +1052,12 @@ static void winraw_free(void *data)
 
 static uint64_t winraw_get_capabilities(void *u)
 {
-   return (1 << RETRO_DEVICE_KEYBOARD) |
-          (1 << RETRO_DEVICE_MOUSE)    |
-          (1 << RETRO_DEVICE_JOYPAD)   |
-          (1 << RETRO_DEVICE_ANALOG)   |
-          (1 << RETRO_DEVICE_POINTER)  |
-          (1 << RETRO_DEVICE_LIGHTGUN);
+   return   (1 << RETRO_DEVICE_KEYBOARD)
+          | (1 << RETRO_DEVICE_MOUSE)
+          | (1 << RETRO_DEVICE_JOYPAD)
+          | (1 << RETRO_DEVICE_ANALOG)
+          | (1 << RETRO_DEVICE_POINTER)
+          | (1 << RETRO_DEVICE_LIGHTGUN);
 }
 
 static void winraw_grab_mouse(void *d, bool state)
@@ -1087,5 +1087,6 @@ input_driver_t input_winraw = {
    winraw_get_capabilities,
    "raw",
    winraw_grab_mouse,
+   NULL,
    NULL
 };

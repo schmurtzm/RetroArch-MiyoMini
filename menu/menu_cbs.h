@@ -154,7 +154,6 @@ enum
    ACTION_OK_DL_PARENT_DIRECTORY_PUSH,
    ACTION_OK_DL_DIRECTORY_PUSH,
    ACTION_OK_DL_DATABASE_MANAGER_LIST,
-   ACTION_OK_DL_CURSOR_MANAGER_LIST,
    ACTION_OK_DL_CORE_UPDATER_LIST,
    ACTION_OK_DL_CORE_MANAGER_LIST,
 #ifdef HAVE_MIST
@@ -329,8 +328,6 @@ int bind_right_generic(unsigned type, const char *label,
 
 int action_ok_core_option_dropdown_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
-
-int menu_cbs_exit(void);
 
 void cb_generic_download(retro_task_t *task,
       void *task_data,

@@ -1535,6 +1535,10 @@ MSG_HASH(
    "menu_swap_ok_cancel"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_INPUT_SWAP_SCROLL,
+   "menu_swap_scroll"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE,
    "input_autodetect_enable"
    )
@@ -1701,6 +1705,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_SCALE,
    "input_overlay_auto_scale"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   "input_overlay_dpad_diagonal_sensitivity"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   "input_overlay_abxy_diagonal_sensitivity"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,
@@ -2401,6 +2413,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_PAUSE_NONACTIVE,
    "pause_nonactive"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PAUSE_ON_DISCONNECT,
+   "pause_on_disconnect"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_SCREENSAVER_TIMEOUT,
@@ -3301,8 +3317,16 @@ MSG_HASH(
    "menu_xmb_vertical_fade_factor"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_XMB_SHOW_TITLE_HEADER,
+   "menu_xmb_show_title_header"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_MENU_XMB_TITLE_MARGIN,
    "menu_xmb_title_margin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
+   "menu_xmb_title_margin_horizontal_offset"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
@@ -3363,6 +3387,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_TICKER_SMOOTH,
    "menu_ticker_smooth"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_REMEMBER_SELECTION,
+   "menu_remember_selection"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_UI_COMPANION_ENABLE,
@@ -4177,6 +4205,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_UNIFIED_MENU_CONTROLS,
    "unified_menu_controls"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_DISABLE_INFO_BUTTON,
+   "disable_info_button"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_DISABLE_SEARCH_BUTTON,
+   "disable_search_button"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUIT_PRESS_TWICE,

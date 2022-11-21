@@ -93,6 +93,8 @@ struct gfx_widget_load_content_animation_state
    float margin_shadow_right_color[16];
    float icon_color[16];
 
+   size_t system_name_len;
+
    enum gfx_widget_load_content_animation_status status;
 
    char content_name[512];
@@ -148,6 +150,8 @@ static gfx_widget_load_content_animation_state_t p_w_load_content_animation_st =
    COLOR_HEX_TO_FLOAT(0x000000, 0.0f), /* margin_shadow_left_color */
    COLOR_HEX_TO_FLOAT(0x000000, 0.0f), /* margin_shadow_right_color */
    COLOR_HEX_TO_FLOAT(0xE0E0E0, 1.0f), /* icon_color */
+
+   0,                                  /* system_name_len */
 
    GFX_WIDGET_LOAD_CONTENT_IDLE,       /* status */
 
@@ -393,17 +397,17 @@ bool gfx_widget_start_load_content_animation(void)
 
          if (!string_is_empty(playlist_path))
          {
-            size_t system_name_len;
-            fill_pathname_base(state->system_name, playlist_path,
+            char new_system_name[512];
+            strlcpy(new_system_name, playlist_path, sizeof(new_system_name));
+            path_remove_extension(new_system_name);
+            state->system_name_len = fill_pathname_base(
+                  state->system_name, new_system_name,
                   sizeof(state->system_name));
-            path_remove_extension(state->system_name);
-
-            system_name_len = strlen(state->system_name);
             /* Exclude history and favourites playlists */
             if (string_ends_with_size(state->system_name, "_history",
-                     system_name_len, STRLEN_CONST("_history")) ||
+                     state->system_name_len, STRLEN_CONST("_history")) ||
                 string_ends_with_size(state->system_name, "_favorites",
-                     system_name_len, STRLEN_CONST("_favorites")))
+                     state->system_name_len, STRLEN_CONST("_favorites")))
                state->system_name[0] = '\0';
 
             /* Check whether a valid system name was found */
@@ -434,7 +438,8 @@ bool gfx_widget_start_load_content_animation(void)
                sizeof(state->system_name));
       /* Otherwise, just use 'RetroArch' as a fallback */
       else
-         strcpy_literal(state->system_name, "RetroArch");
+         strlcpy(state->system_name, "RetroArch",
+               sizeof(state->system_name));
    }
 
    /* > Content name has been determined
@@ -597,10 +602,10 @@ static void gfx_widget_load_content_animation_iterate(void *user_data,
       /* Get overall text width */
       content_name_width = font_driver_get_message_width(
             font_bold->font, state->content_name,
-            (unsigned)strlen(state->content_name), 1.0f);
+            strlen(state->content_name), 1.0f);
       system_name_width = font_driver_get_message_width(
             font_regular->font, state->system_name,
-            (unsigned)strlen(state->system_name), 1.0f);
+            state->system_name_len, 1.0f);
 
       state->content_name_width = (content_name_width > 0) ?
             (unsigned)content_name_width : 0;
@@ -665,7 +670,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
 
 #ifdef HAVE_MENU
       /* Draw nothing if menu is currently active */
-      if (menu_state_get_ptr()->alive)
+      if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
          return;
 #endif
 

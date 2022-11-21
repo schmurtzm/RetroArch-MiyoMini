@@ -20,7 +20,6 @@
 #include <ctype.h>
 #include <boolean.h>
 #include <sys/stat.h>
-#include <errno.h>
 #include <dirent.h>
 
 #include <file/nbio.h>
@@ -164,8 +163,7 @@ static void get_first_valid_core(char *path_return, size_t len)
 
    path_return[0] = '\0';
 
-   dir = opendir(SD_PREFIX "/retroarch/cores");
-   if (dir)
+   if ((dir = opendir(SD_PREFIX "/retroarch/cores")))
    {
       while ((ent = readdir(dir)))
       {
@@ -173,7 +171,7 @@ static void get_first_valid_core(char *path_return, size_t len)
             break;
          if (strlen(ent->d_name) > strlen(extension) && !strcmp(ent->d_name + strlen(ent->d_name) - strlen(extension), extension))
          {
-            strcpy_literal(path_return, SD_PREFIX "/retroarch/cores");
+            strlcpy(path_return, SD_PREFIX "/retroarch/cores", len);
             strlcat(path_return, "/", len);
             strlcat(path_return, ent->d_name, len);
             break;
@@ -233,9 +231,6 @@ static void frontend_switch_get_env(
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "records", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
-
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], g_defaults.dirs[DEFAULT_DIR_PORT],
-                      "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
@@ -624,10 +619,10 @@ static int frontend_switch_parse_drive_list(void *data, bool load_content)
    if (!list)
       return -1;
 
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          "/", msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #endif
 
    return 0;
@@ -692,7 +687,7 @@ static void frontend_switch_get_os(
    ipc_request_t rq;
 #endif
 
-   strcpy_literal(s, "Horizon OS");
+   strlcpy(s, "Horizon OS", len);
 
 #ifdef HAVE_LIBNX
    *major     = 0;
@@ -730,8 +725,8 @@ fail:
 
 static void frontend_switch_get_name(char *s, size_t len)
 {
-   /* TODO: Add Mariko at some point */
-   strcpy_literal(s, "Nintendo Switch");
+   /* TODO/FIXME: Add Mariko at some point */
+   strlcpy(s, "Nintendo Switch", len);
 }
 
 void frontend_switch_process_args(int *argc, char *argv[])

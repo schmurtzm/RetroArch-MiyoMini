@@ -26,7 +26,6 @@
 #include "../font_driver.h"
 
 #include "../../configuration.h"
-#include "../../verbosity.h"
 
 #include "../common/switch_common.h"
 
@@ -51,7 +50,6 @@ static void *switch_font_init(void *data, const char *font_path,
    if (!font_renderer_create_default(&font->font_driver,
             &font->font_data, font_path, font_size))
    {
-      RARCH_WARN("Couldn't initialize font renderer.\n");
       free(font);
       return NULL;
    }
@@ -75,9 +73,9 @@ static void switch_font_free(void *data, bool is_threaded)
 }
 
 static int switch_font_get_message_width(void *data, const char *msg,
-      unsigned msg_len, float scale)
+      size_t msg_len, float scale)
 {
-   unsigned i;
+   int i;
    const struct font_glyph* glyph_q = NULL;
    int         delta_x = 0;
    switch_font_t *font = (switch_font_t *)data;
@@ -111,11 +109,11 @@ static int switch_font_get_message_width(void *data, const char *msg,
 
 static void switch_font_render_line(
       switch_video_t *sw,
-      switch_font_t *font, const char *msg, unsigned msg_len,
+      switch_font_t *font, const char *msg, size_t msg_len,
       float scale, const unsigned int color, float pos_x,
       float pos_y, unsigned text_align)
 {
-   unsigned i;
+   int i;
    const struct font_glyph* glyph_q = NULL;
    int delta_x                      = 0;
    int delta_y                      = 0;
@@ -201,7 +199,7 @@ static void switch_font_render_message(
    if (!font->font_driver->get_line_metrics ||
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
-      int msg_len = strlen(msg);
+      size_t msg_len = strlen(msg);
       if (msg_len <= AVG_GLPYH_LIMIT)
          switch_font_render_line(sw, font, msg, msg_len,
                scale, color, pos_x, pos_y, text_align);
@@ -213,8 +211,8 @@ static void switch_font_render_message(
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
-      unsigned msg_len  = delim ?
-         (unsigned)(delim - msg) : strlen(msg);
+      size_t msg_len    = delim ?
+         (delim - msg) : strlen(msg);
 
       /* Draw the line */
       if (msg_len <= AVG_GLPYH_LIMIT)

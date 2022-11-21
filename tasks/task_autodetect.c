@@ -29,6 +29,7 @@
 #include "../file_path_special.h"
 #include "../list_special.h"
 #include "../retroarch.h"
+#include "../verbosity.h"
 #include "../input/input_driver.h"
 #include "../input/input_remapping.h"
 
@@ -37,6 +38,16 @@
 #include "../input/include/blissbox.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "../menu/menu_driver.h"
+#endif
+
+enum autoconfig_handle_flags
+{
+   AUTOCONF_FLAG_AUTOCONFIG_ENABLED     = (1 << 0),
+   AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS = (1 << 1)
+};
+
 typedef struct
 {
    char *dir_autoconfig;
@@ -44,8 +55,7 @@ typedef struct
    config_file_t *autoconfig_file;
    unsigned port;
    input_device_info_t device_info; /* unsigned alignment */
-   bool autoconfig_enabled;
-   bool suppress_notifcations;
+   uint8_t flags;
 } autoconfig_handle_t;
 
 /*********************/
@@ -442,9 +452,9 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
 
    autoconfig_handle = (autoconfig_handle_t*)task->state;
 
-   if (!autoconfig_handle ||
-       string_is_empty(autoconfig_handle->device_info.name) ||
-       !autoconfig_handle->autoconfig_enabled)
+   if (   !autoconfig_handle
+       || string_is_empty(autoconfig_handle->device_info.name)
+       || !(autoconfig_handle->flags & AUTOCONF_FLAG_AUTOCONFIG_ENABLED))
       goto task_finished;
 
    /* Annoyingly, we have to scan all the autoconfig
@@ -522,33 +532,61 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
       if (match_found)
       {
          /* A valid autoconfig was applied */
-         if (!autoconfig_handle->suppress_notifcations)
-            snprintf(task_title, sizeof(task_title), "%s %s %u",
-                  device_display_name,
+         if (!(autoconfig_handle->flags & AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS))
+         {
+            size_t _len        = strlcpy(task_title,
+                  device_display_name, sizeof(task_title));
+            task_title[_len  ] = ' ';
+            task_title[++_len] = '\0';
+            _len               = strlcat(task_title, 
                   msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
+                  sizeof(task_title));
+            task_title[_len  ] = ' ';
+            task_title[++_len] = '\0';
+            snprintf(task_title + _len, sizeof(task_title) - _len, "%u",
                   autoconfig_handle->port + 1);
+         }
       }
       /* Device is autoconfigured, but a (most likely
        * incorrect) fallback definition was used... */
       else
-         snprintf(task_title, sizeof(task_title), "%s (%u/%u) %s",
-               device_display_name,
+      {
+         size_t _len        = strlcpy(task_title,
+               device_display_name, sizeof(task_title));
+         task_title[_len  ] = ' ';
+         task_title[++_len] = '(';
+         task_title[++_len] = '\0';
+         snprintf(task_title + _len, sizeof(task_title) - _len, "%u/%u) ",
                autoconfig_handle->device_info.vid,
-               autoconfig_handle->device_info.pid,
-               msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED_FALLBACK));
+               autoconfig_handle->device_info.pid);
+         strlcat(task_title,
+               msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED_FALLBACK),
+               sizeof(task_title));
+      }
    }
    /* Autoconfig failed */
    else
-      snprintf(task_title, sizeof(task_title), "%s (%u/%u) %s",
-            device_display_name,
+   {
+      size_t _len        = strlcpy(task_title,
+            device_display_name, sizeof(task_title));
+      task_title[_len  ] = ' ';
+      task_title[++_len] = '(';
+      task_title[++_len] = '\0';
+      snprintf(task_title + _len, sizeof(task_title) - _len, "%u/%u) ",
             autoconfig_handle->device_info.vid,
-            autoconfig_handle->device_info.pid,
-            msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
+            autoconfig_handle->device_info.pid);
+      strlcat(task_title,
+            msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED),
+            sizeof(task_title));
+   }
 
    /* Update task title */
    task_free_title(task);
    if (!string_is_empty(task_title))
+   {
       task_set_title(task, strdup(task_title));
+      RARCH_LOG("[Autoconf]: %s.\n", task_title);
+   }
 
 task_finished:
 
@@ -607,7 +645,8 @@ bool input_autoconfigure_connect(
       goto error;
 
    /* Configure handle */
-   if (!(autoconfig_handle = (autoconfig_handle_t*)malloc(sizeof(autoconfig_handle_t))))
+   if (!(autoconfig_handle = (autoconfig_handle_t*)
+            malloc(sizeof(autoconfig_handle_t))))
       goto error;
 
    autoconfig_handle->port                         = port;
@@ -620,8 +659,10 @@ bool input_autoconfigure_connect(
    autoconfig_handle->device_info.joypad_driver[0] = '\0';
    autoconfig_handle->device_info.autoconfigured   = false;
    autoconfig_handle->device_info.name_index       = 0;
-   autoconfig_handle->autoconfig_enabled           = autoconfig_enabled;
-   autoconfig_handle->suppress_notifcations        = !notification_show_autoconfig;
+   if (autoconfig_enabled)
+      autoconfig_handle->flags |= AUTOCONF_FLAG_AUTOCONFIG_ENABLED;
+   if (!notification_show_autoconfig)
+      autoconfig_handle->flags |= AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS;
    autoconfig_handle->dir_autoconfig               = NULL;
    autoconfig_handle->dir_driver_autoconfig        = NULL;
    autoconfig_handle->autoconfig_file              = NULL;
@@ -634,8 +675,7 @@ bool input_autoconfigure_connect(
       strlcpy(autoconfig_handle->device_info.display_name, display_name,
             sizeof(autoconfig_handle->device_info.display_name));
 
-   driver_valid = !string_is_empty(driver);
-   if (driver_valid)
+   if ((driver_valid = !string_is_empty(driver)))
       strlcpy(autoconfig_handle->device_info.joypad_driver,
             driver, sizeof(autoconfig_handle->device_info.joypad_driver));
 
@@ -681,8 +721,8 @@ bool input_autoconfigure_connect(
     * task status messages
     * > Can skip this check if autoconfig notifications
     *   have been disabled by the user */
-   if (!autoconfig_handle->suppress_notifcations &&
-       !string_is_empty(autoconfig_handle->device_info.name))
+   if (   !(autoconfig_handle->flags & AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS)
+       && !string_is_empty(autoconfig_handle->device_info.name))
    {
       const char *last_device_name = input_config_get_device_name(port);
       uint16_t last_vid            = input_config_get_device_vid(port);
@@ -695,7 +735,7 @@ bool input_autoconfigure_connect(
           (autoconfig_handle->device_info.vid == last_vid) &&
           (autoconfig_handle->device_info.pid == last_pid) &&
           last_autoconfigured)
-         autoconfig_handle->suppress_notifcations = true;
+         autoconfig_handle->flags |= AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS;
    }
 
    /* Configure task */
@@ -764,7 +804,9 @@ static void cb_input_autoconfigure_disconnect(
 
 static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 {
+   size_t _len;
    autoconfig_handle_t *autoconfig_handle = NULL;
+   const char *device_display_name        = NULL;
    char task_title[NAME_MAX_LENGTH + 16];
 
    task_title[0] = '\0';
@@ -775,20 +817,31 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
    if (!(autoconfig_handle = (autoconfig_handle_t*)task->state))
       goto task_finished;
 
+   /* Get display name for task status message */
+   device_display_name = autoconfig_handle->device_info.display_name;
+   if (string_is_empty(device_display_name))
+      device_display_name = autoconfig_handle->device_info.name;
+   if (string_is_empty(device_display_name))
+      device_display_name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
+
    /* Set task title */
-   if (!string_is_empty(autoconfig_handle->device_info.name))
-      snprintf(task_title, sizeof(task_title), "%s %u (%s)",
-            msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
-            autoconfig_handle->port + 1,
-            autoconfig_handle->device_info.name);
-   else
-      snprintf(task_title, sizeof(task_title), "%s %u",
-            msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
-            autoconfig_handle->port + 1);
+   _len        = strlcpy(task_title,
+         device_display_name, sizeof(task_title));
+   task_title[_len  ] = ' ';
+   task_title[++_len] = '\0';
+   _len               = strlcat(task_title,
+         msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
+         sizeof(task_title));
+   task_title[_len  ] = ' ';
+   task_title[++_len] = '\0';
+   snprintf(task_title + _len, sizeof(task_title) - _len, "%u",
+         autoconfig_handle->port + 1);
 
    task_free_title(task);
-   if (!autoconfig_handle->suppress_notifcations)
+   if (!(autoconfig_handle->flags & AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS))
       task_set_title(task, strdup(task_title));
+   if (!string_is_empty(task_title))
+      RARCH_LOG("[Autoconf]: %s.\n", task_title);
 
 task_finished:
 
@@ -829,8 +882,10 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
    autoconfig_handle_t *autoconfig_handle = NULL;
    task_finder_data_t find_data;
    settings_t *settings                   = config_get_ptr();
-   bool notification_show_autoconfig      = settings ?
-         settings->bools.notification_show_autoconfig : true;
+   input_driver_state_t *input_st         = input_state_get_ptr();
+   bool notification_show_autoconfig      = settings ? settings->bools.notification_show_autoconfig : true;
+   bool pause_on_disconnect               = settings ? settings->bools.pause_on_disconnect : true;
+   bool core_is_running                   = runloop_state_get_ptr()->flags & RUNLOOP_FLAG_CORE_RUNNING;
 
    if (port >= MAX_INPUT_DEVICES)
       goto error;
@@ -849,17 +904,22 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
    if (!autoconfig_handle)
       goto error;
 
-   autoconfig_handle->port                  = port;
-   autoconfig_handle->suppress_notifcations = !notification_show_autoconfig;
+   autoconfig_handle->port      = port;
+   if (!notification_show_autoconfig)
+      autoconfig_handle->flags |= AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS;
 
-   if (!string_is_empty(name))
+   /* Use display_name as name instead since autoconfig display_name
+    * is destroyed already, and real name does not matter at this point */
+   if (input_st && !string_is_empty(input_st->input_device_info[port].display_name))
+      strlcpy(autoconfig_handle->device_info.name,
+            input_st->input_device_info[port].display_name,
+            sizeof(autoconfig_handle->device_info.name));
+   else if (!string_is_empty(name))
       strlcpy(autoconfig_handle->device_info.name,
             name, sizeof(autoconfig_handle->device_info.name));
 
    /* Configure task */
-   task = task_init();
-
-   if (!task)
+   if (!(task = task_init()))
       goto error;
 
    task->handler  = input_autoconfigure_disconnect_handler;
@@ -869,6 +929,21 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
    task->cleanup  = input_autoconfigure_free;
 
    task_queue_push(task);
+
+   if (pause_on_disconnect && core_is_running)
+   {
+#ifdef HAVE_MENU
+      bool menu_pause_libretro = settings->bools.menu_pause_libretro;
+      bool menu_is_alive       = menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE;
+
+      if (menu_pause_libretro && !menu_is_alive)
+         command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+      else if (!menu_pause_libretro)
+         command_event(CMD_EVENT_PAUSE, NULL);
+#else
+      command_event(CMD_EVENT_PAUSE, NULL);
+#endif
+   }
 
    return true;
 

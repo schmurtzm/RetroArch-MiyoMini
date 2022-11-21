@@ -213,6 +213,8 @@ MSG_HASH(
    "Utilizaire"
    )
 
+/* Core option category placeholders for icons */
+
 #ifdef HAVE_MIST
 #endif
 
@@ -293,13 +295,19 @@ MSG_HASH(
 /* Settings > Input > Menu Controls */
 
 
-
 /* Settings > Input > Hotkeys */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-   "Quitar RetroArch"
-   )
+
+
+
+
+
+
+
+
+
+
+
 
 /* Settings > Input > Port # Controls */
 

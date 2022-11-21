@@ -2,7 +2,6 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2017 - Gregor Richards
- *  Copyright (C) 2021-2022 - Roberto V. Rampim
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -241,6 +240,18 @@ struct netplay_chat_buffer
    uint32_t color_msg;
 };
 
+enum net_driver_state_flags
+{
+   NET_DRIVER_ST_FLAG_NETPLAY_CLIENT_DEFERRED      = (1 << 0),
+   /* Only used before init_netplay */
+   NET_DRIVER_ST_FLAG_NETPLAY_ENABLED              = (1 << 1),
+   NET_DRIVER_ST_FLAG_NETPLAY_IS_CLIENT            = (1 << 2),
+   NET_DRIVER_ST_FLAG_HAS_SET_NETPLAY_MODE         = (1 << 3),
+   NET_DRIVER_ST_FLAG_HAS_SET_NETPLAY_IP_ADDRESS   = (1 << 4),
+   NET_DRIVER_ST_FLAG_HAS_SET_NETPLAY_IP_PORT      = (1 << 5),
+   NET_DRIVER_ST_FLAG_HAS_SET_NETPLAY_CHECK_FRAMES = (1 << 6)
+};
+
 typedef struct
 {
 #ifndef HAVE_DYNAMIC
@@ -268,16 +279,9 @@ typedef struct
    int room_count;
    int latest_ping;
    unsigned server_port_deferred;
+   uint8_t flags;
    char server_address_deferred[256];
    char server_session_deferred[32];
-   bool netplay_client_deferred;
-   /* Only used before init_netplay */
-   bool netplay_enabled;
-   bool netplay_is_client;
-   bool has_set_netplay_mode;
-   bool has_set_netplay_ip_address;
-   bool has_set_netplay_ip_port;
-   bool has_set_netplay_check_frames;
 } net_driver_state_t;
 
 net_driver_state_t *networking_state_get_ptr(void);
@@ -285,7 +289,6 @@ net_driver_state_t *networking_state_get_ptr(void);
 bool netplay_compatible_version(const char *version);
 bool netplay_decode_hostname(const char *hostname,
    char *address, unsigned *port, char *session, size_t len);
-bool netplay_is_lan_address(struct sockaddr_in *addr);
 
 int netplay_rooms_parse(const char *buf, size_t len);
 int netplay_rooms_get_count(void);

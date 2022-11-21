@@ -81,8 +81,7 @@
 #define MODULE_PATH "/data/self/system/common/lib/"
 #define MODULE_PATH_EXT "/app0/sce_module/"
 
-char eboot_path[512];
-char user_path[512];
+static char eboot_path[512]     = {0};
 SceKernelModule s_piglet_module;
 SceKernelModule s_shacc_module;
 
@@ -105,6 +104,7 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
       void *args, void *params_data)
 {
    unsigned i;
+   char user_path[512];
    struct rarch_main_wrap *params = NULL;
 
    strlcpy(eboot_path, EBOOT_PATH, sizeof(eboot_path));
@@ -121,8 +121,6 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
          "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], user_path,
          "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], user_path,
-         "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], user_path,
          "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], user_path,
@@ -131,7 +129,7 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
          "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], user_path,
          "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], user_path,
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
          "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM], user_path,
          "savefiles", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
@@ -160,7 +158,7 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
 
 #ifndef IS_SALAMANDER
    params          = (struct rarch_main_wrap*)params_data;
-   params->verbose = true;
+   params->flags  |=   RARCH_MAIN_WRAP_FLAG_VERBOSE;
 
    if (!string_is_empty(argv[CONTENT_PATH_ARG_INDEX]))
    {
@@ -172,9 +170,9 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
       {
          strlcpy(path, argv[CONTENT_PATH_ARG_INDEX], sizeof(path));
 
-         args->touched        = true;
-         args->no_content     = false;
-         args->verbose        = false;
+         params->flags       &= ~(RARCH_MAIN_WRAP_FLAG_VERBOSE
+                                | RARCH_MAIN_WRAP_FLAG_NO_CONTENT);
+         params->flags       |=   RARCH_MAIN_WRAP_FLAG_TOUCHED;
          args->config_path    = NULL;
          args->sram_path      = NULL;
          args->state_path     = NULL;
@@ -294,23 +292,23 @@ static int frontend_orbis_parse_drive_list(void *data, bool load_content)
       MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
       MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
 
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          "/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          "/data",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          "/usb0",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #endif
    return 0;
 }

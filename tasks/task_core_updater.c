@@ -3,7 +3,6 @@
  *  Copyright (C) 2014-2017 - Jean-André Santoni
  *  Copyright (C) 2016-2019 - Brad Parker
  *  Copyright (C)      2019 - James Leaver
- *  Copyright (C)      2022 - Roberto V. Rampim
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -576,14 +575,8 @@ void cb_http_task_core_updater_download(
    if (!(download_handle = (core_updater_download_handle_t*)transf->user_data))
       goto finish;
 
-   /* Update download_handle task status
-    * NOTE: We set decompress_task_complete = true
-    * here to prevent any lock-ups in the event
-    * of errors (or lack of decompression support).
-    * decompress_task_complete will be set false
-    * if/when we actually call task_push_decompress() */
+   /* Update download_handle task status */
    download_handle->http_task_complete       = true;
-   download_handle->decompress_task_complete = true;
 
    /* Create output directory, if required */
    strlcpy(output_dir, transf->path, sizeof(output_dir));
@@ -634,8 +627,6 @@ void cb_http_task_core_updater_download(
          err = msg_hash_to_str(MSG_DECOMPRESSION_FAILED);
          goto finish;
       }
-
-      download_handle->decompress_task_complete = false;
    }
 #endif
 
@@ -647,6 +638,10 @@ finish:
 
    if (transf)
       free(transf);
+
+   /* if no decompress task was queued, mark it as completed */
+   if (!download_handle->decompress_task)
+      download_handle->decompress_task_complete = true;
 }
 
 static void free_core_updater_download_handle(core_updater_download_handle_t *download_handle)
@@ -893,13 +888,12 @@ static void task_core_updater_download_handler(retro_task_t *task)
       case CORE_UPDATER_DOWNLOAD_WAIT_DECOMPRESS:
          {
             /* If decompression task is NULL, then it either
-             * finished or an error occurred - in either case,
-             * just move on to the next state */
-            if (!download_handle->decompress_task)
-               download_handle->decompress_task_complete = true;
-            /* Otherwise, check if decompression task is still
-             * running */
-            else if (!download_handle->decompress_task_finished)
+             * hasn't been queued by the download task yet,
+             * or an error occurred. The latter should set
+             * the decompress_task_complete flag and we'll
+             * continue to the next state */
+            if (download_handle->decompress_task &&
+               !download_handle->decompress_task_finished)
             {
                download_handle->decompress_task_finished =
                      task_get_finished(download_handle->decompress_task);
@@ -1375,8 +1369,9 @@ static void task_update_installed_cores_handler(retro_task_t *task)
             if (update_installed_handle->list_size > 0)
             {
                char task_title[PATH_MAX_LENGTH];
-
-               task_title[0] = '\0';
+               size_t _len = strlcpy(task_title,
+                     msg_hash_to_str(MSG_ALL_CORES_UPDATED),
+                     sizeof(task_title));
 
                /* > Generate final status message based on number
                 *   of cores that were updated/locked */
@@ -1384,28 +1379,28 @@ static void task_update_installed_cores_handler(retro_task_t *task)
                {
                   if (update_installed_handle->num_locked > 0)
                      snprintf(
-                           task_title, sizeof(task_title), "%s [%s%u, %s%u]",
-                           msg_hash_to_str(MSG_ALL_CORES_UPDATED),
+                           task_title         + _len,
+                           sizeof(task_title) - _len,
+                           " [%s%u, %s%u]",
                            msg_hash_to_str(MSG_NUM_CORES_UPDATED),
                            update_installed_handle->num_updated,
                            msg_hash_to_str(MSG_NUM_CORES_LOCKED),
                            update_installed_handle->num_locked);
                   else
                      snprintf(
-                           task_title, sizeof(task_title), "%s [%s%u]",
-                           msg_hash_to_str(MSG_ALL_CORES_UPDATED),
+                           task_title         + _len,
+                           sizeof(task_title) - _len,
+                           " [%s%u]",
                            msg_hash_to_str(MSG_NUM_CORES_UPDATED),
                            update_installed_handle->num_updated);
                }
                else if (update_installed_handle->num_locked > 0)
                   snprintf(
-                        task_title, sizeof(task_title), "%s [%s%u]",
-                        msg_hash_to_str(MSG_ALL_CORES_UPDATED),
+                        task_title         + _len,
+                        sizeof(task_title) - _len,
+                        " [%s%u]",
                         msg_hash_to_str(MSG_NUM_CORES_LOCKED),
                         update_installed_handle->num_locked);
-               else
-                  strlcpy(task_title, msg_hash_to_str(MSG_ALL_CORES_UPDATED),
-                        sizeof(task_title));
 
                task_set_title(task, strdup(task_title));
             }

@@ -685,6 +685,9 @@ struct vulkan_filter_chain
 
       VkFormat get_pass_rt_format(unsigned pass);
 
+      bool emits_hdr10() const;
+      void set_hdr10();
+
    private:
       VkDevice device;
       VkPhysicalDevice gpu;
@@ -719,6 +722,7 @@ struct vulkan_filter_chain
       void clear_history_and_feedback(VkCommandBuffer cmd);
       void update_feedback_info();
       void update_history_info();
+      bool emits_hdr_colorspace = false;
 };
 
 static uint32_t find_memory_type_fallback(
@@ -845,6 +849,7 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    image_info.initialLayout        = VK_IMAGE_LAYOUT_UNDEFINED;
 
    vkCreateImage(info->device, &image_info, nullptr, &tex);
+   vulkan_debug_mark_image(info->device, tex);
    vkGetImageMemoryRequirements(info->device, tex, &mem_reqs);
 
    alloc.allocationSize            = mem_reqs.size;
@@ -856,6 +861,7 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    if (vkAllocateMemory(info->device, &alloc, nullptr, &memory) != VK_SUCCESS)
       goto error;
 
+   vulkan_debug_mark_memory(info->device, memory);
    vkBindImageMemory(info->device, tex, memory, 0);
 
    view_info.image                       = tex;
@@ -1486,10 +1492,20 @@ void vulkan_filter_chain::set_pass_info(unsigned pass,
    pass_info[pass] = info;
 }
 
- VkFormat vulkan_filter_chain::get_pass_rt_format(unsigned pass)
- {
-    return pass_info[pass].rt_format;
- }
+VkFormat vulkan_filter_chain::get_pass_rt_format(unsigned pass)
+{
+   return pass_info[pass].rt_format;
+}
+
+bool vulkan_filter_chain::emits_hdr10() const
+{
+   return emits_hdr_colorspace;
+}
+
+void vulkan_filter_chain::set_hdr10()
+{
+   emits_hdr_colorspace = true;
+}
 
 void vulkan_filter_chain::set_num_passes(unsigned num_passes)
 {
@@ -1703,6 +1719,7 @@ Buffer::Buffer(VkDevice device,
          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
    vkAllocateMemory(device, &alloc, NULL, &memory);
+   vulkan_debug_mark_memory(device, memory);
    vkBindBufferMemory(device, buffer, memory, 0);
 }
 
@@ -2706,6 +2723,7 @@ void Framebuffer::init(DeferredDisposer *disposer)
    levels                 = info.mipLevels;
 
    vkCreateImage(device, &info, nullptr, &image);
+   vulkan_debug_mark_image(device, image);
 
    vkGetImageMemoryRequirements(device, image, &mem_reqs);
 
@@ -2731,6 +2749,7 @@ void Framebuffer::init(DeferredDisposer *disposer)
       memory.size = mem_reqs.size;
 
       vkAllocateMemory(device, &alloc, nullptr, &memory.memory);
+      vulkan_debug_mark_memory(device, memory.memory);
    }
 
    vkBindImageMemory(device, image, memory.memory, 0);
@@ -2879,7 +2898,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
     if (!video_shader_load_preset_into_shader(path, shader.get()))
         return nullptr;
 
-   bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.valid;
+   bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.flags &
+      FBO_SCALE_FLAG_VALID;
    auto tmpinfo          = *info;
    tmpinfo.num_passes    = shader->passes + (last_pass_is_fbo ? 1 : 0);
 
@@ -3010,7 +3030,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       if (output.meta.rt_format == SLANG_FORMAT_UNKNOWN)
          output.meta.rt_format     = SLANG_FORMAT_R8G8B8A8_UNORM;
 
-      if (!pass->fbo.valid)
+      if (!(pass->fbo.flags & FBO_SCALE_FLAG_VALID))
       {
          pass_info.scale_type_x    = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
          pass_info.scale_type_y    = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
@@ -3021,22 +3041,19 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          {
             pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
             pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
-#ifdef VULKAN_HDR_SWAPCHAIN
-            if (tmpinfo.swapchain.format == VK_FORMAT_A2B10G10R10_UNORM_PACK32)
-            {
-               pass_info.rt_format    = glslang_format_to_vk( output.meta.rt_format);
 
-               RARCH_LOG("[slang]: Using render target format %s for pass output #%u.\n",
-                     glslang_format_to_string(output.meta.rt_format), i);
-            }
-            else
-#endif /* VULKAN_HDR_SWAPCHAIN */
-            {
-               pass_info.rt_format    = tmpinfo.swapchain.format;
+            /* Always inherit swapchain format. */
+            pass_info.rt_format  = tmpinfo.swapchain.format;
+            VkFormat pass_format = glslang_format_to_vk(output.meta.rt_format);
 
-               if (explicit_format)
-                  RARCH_WARN("[slang]: Using explicit format for last pass in chain,"
-                        " but it is not rendered to framebuffer, using swapchain format instead.\n");
+            /* If final pass explicitly emits RGB10, consider it HDR color space. */
+            if (explicit_format && pass_format == VK_FORMAT_A2B10G10R10_UNORM_PACK32)
+               chain->set_hdr10();
+
+            if (explicit_format && pass_format != pass_info.rt_format)
+            {
+               RARCH_WARN("[slang]: Using explicit format for last pass in chain,"
+                     " but it is not rendered to framebuffer, using swapchain format instead.\n");
             }
          }
          else
@@ -3051,9 +3068,9 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       {
          /* Preset overrides shader.
           * Kinda ugly ... */
-         if (pass->fbo.srgb_fbo)
+         if (pass->fbo.flags & FBO_SCALE_FLAG_SRGB_FBO)
             output.meta.rt_format = SLANG_FORMAT_R8G8B8A8_SRGB;
-         else if (pass->fbo.fp_fbo)
+         else if (pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
             output.meta.rt_format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
 
          pass_info.rt_format      = glslang_format_to_vk(output.meta.rt_format);
@@ -3254,4 +3271,9 @@ void vulkan_filter_chain_end_frame(
       VkCommandBuffer cmd)
 {
    chain->end_frame(cmd);
+}
+
+bool vulkan_filter_chain_emits_hdr10(vulkan_filter_chain_t *chain)
+{
+   return chain->emits_hdr10();
 }

@@ -66,10 +66,7 @@ static gfx_animation_t anim_st = {
    NULL,   /* list                  */
    NULL,   /* pending               */
    0.0f,   /* delta_time            */
-   false,  /* pending_deletes       */
-   false,  /* in_update             */
-   false,  /* animation_is_active   */
-   false   /* ticker_is_active      */
+   0       /* flags                 */
 };
 
 gfx_animation_t *anim_get_ptr(void)
@@ -443,13 +440,13 @@ static void ticker_smooth_scan_string_fw(
     * string once offset has been subtracted */
    if (*char_offset < num_chars)
    {
-      unsigned chars_remaining = num_chars - *char_offset;
+      size_t chars_remaining = num_chars - *char_offset;
       /* Determine number of characters to copy */
       if ((chars_remaining > 0) && (field_width > *x_offset))
       {
          *num_chars_to_copy = (field_width - *x_offset) / glyph_width;
          if (*num_chars_to_copy > chars_remaining)
-            *num_chars_to_copy = chars_remaining;
+            *num_chars_to_copy = (unsigned)chars_remaining;
       }
    }
 }
@@ -566,7 +563,7 @@ static void gfx_animation_ticker_smooth_loop_fw(uint64_t idx,
       /* Determine number of characters to copy */
       *num_chars_to_copy3 = remaining_width / glyph_width;
       if (*num_chars_to_copy3 > num_chars)
-         *num_chars_to_copy3 = num_chars;
+         *num_chars_to_copy3 = (unsigned)num_chars;
    }
 }
 
@@ -1175,7 +1172,7 @@ bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
    if (!t.easing || t.duration == 0 || t.initial_value == t.target_value)
       return false;
 
-   if (p_anim->in_update)
+   if (p_anim->flags & GFX_ANIM_FLAG_IN_UPDATE)
       RBUF_PUSH(p_anim->pending, t);
    else
       RBUF_PUSH(p_anim->list, t);
@@ -1192,7 +1189,7 @@ bool gfx_animation_update(
 {
    unsigned i;
    gfx_animation_t *p_anim                     = &anim_st;
-   const bool ticker_is_active                 = p_anim->ticker_is_active;
+   const bool ticker_is_active                 = p_anim->flags & GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
 
    static retro_time_t last_clock_update       = 0;
    static retro_time_t last_ticker_update      = 0;
@@ -1227,7 +1224,7 @@ bool gfx_animation_update(
    if (((p_anim->cur_time - last_clock_update) > 1000000) /* 1000000 us == 1 second */
          && timedate_enable)
    {
-      p_anim->animation_is_active   = true;
+      p_anim->flags                |= GFX_ANIM_FLAG_IS_ACTIVE;
       last_clock_update             = p_anim->cur_time;
    }
 
@@ -1296,8 +1293,8 @@ bool gfx_animation_update(
       }
    }
 
-   p_anim->in_update       = true;
-   p_anim->pending_deletes = false;
+   p_anim->flags          |=  GFX_ANIM_FLAG_IN_UPDATE;
+   p_anim->flags          &= ~GFX_ANIM_FLAG_PENDING_DELETES;
 
    for (i = 0; i < RBUF_LEN(p_anim->list); i++)
    {
@@ -1326,7 +1323,7 @@ bool gfx_animation_update(
       }
    }
 
-   if (p_anim->pending_deletes)
+   if (p_anim->flags & GFX_ANIM_FLAG_PENDING_DELETES)
    {
       for (i = 0; i < RBUF_LEN(p_anim->list); i++)
       {
@@ -1337,7 +1334,7 @@ bool gfx_animation_update(
             i--;
          }
       }
-      p_anim->pending_deletes = false;
+      p_anim->flags &= ~GFX_ANIM_FLAG_PENDING_DELETES;
    }
 
    if (RBUF_LEN(p_anim->pending) > 0)
@@ -1350,10 +1347,13 @@ bool gfx_animation_update(
       RBUF_CLEAR(p_anim->pending);
    }
 
-   p_anim->in_update           = false;
-   p_anim->animation_is_active = RBUF_LEN(p_anim->list) > 0;
+   p_anim->flags              &= ~GFX_ANIM_FLAG_IN_UPDATE;
+   if (RBUF_LEN(p_anim->list) > 0)
+	   p_anim->flags      |=  GFX_ANIM_FLAG_IS_ACTIVE;
+   else
+	   p_anim->flags      &= ~GFX_ANIM_FLAG_IS_ACTIVE;
 
-   return p_anim->animation_is_active;
+   return ((p_anim->flags & GFX_ANIM_FLAG_IS_ACTIVE) > 0);
 }
 
 static void build_ticker_loop_string(
@@ -1363,20 +1363,18 @@ static void build_ticker_loop_string(
       size_t char_offset3, size_t num_chars3,
       char *dest_str, size_t dest_str_len)
 {
-   char tmp[PATH_MAX_LENGTH];
-
-   tmp[0]      = '\0';
-   dest_str[0] = '\0';
-
    /* Copy 'trailing' chunk of source string, if required */
    if (num_chars1 > 0)
       utf8cpy(
             dest_str, dest_str_len,
             utf8skip(src_str, char_offset1), num_chars1);
+   else
+      dest_str[0] = '\0';
 
    /* Copy chunk of spacer string, if required */
    if (num_chars2 > 0)
    {
+      char tmp[PATH_MAX_LENGTH];
       utf8cpy(
             tmp, sizeof(tmp),
             utf8skip(spacer, char_offset2), num_chars2);
@@ -1387,6 +1385,7 @@ static void build_ticker_loop_string(
    /* Copy 'leading' chunk of source string, if required */
    if (num_chars3 > 0)
    {
+      char tmp[PATH_MAX_LENGTH];
       utf8cpy(
             tmp, sizeof(tmp),
             utf8skip(src_str, char_offset3), num_chars3);
@@ -1402,17 +1401,21 @@ static void build_line_ticker_string(
 {
    size_t i;
 
-   for (i = 0; i < num_display_lines; i++)
+   for (i = 0; i < (num_display_lines-1); i++)
    {
       size_t offset     = i + line_offset;
       size_t line_index = offset % (lines->size + 1);
-
       /* Is line valid? */
       if (line_index < lines->size)
          strlcat(dest_str, lines->elems[line_index].data, dest_str_len);
-
-      if (i < num_display_lines - 1)
-         strlcat(dest_str, "\n", dest_str_len);
+      strlcat(dest_str, "\n", dest_str_len);
+   }
+   {
+      size_t offset     = (num_display_lines-1) + line_offset;
+      size_t line_index = offset % (lines->size + 1);
+      /* Is line valid? */
+      if (line_index < lines->size)
+         strlcat(dest_str, lines->elems[line_index].data, dest_str_len);
    }
 }
 
@@ -1488,7 +1491,7 @@ bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
          break;
    }
 
-   p_anim->ticker_is_active = true;
+   p_anim->flags |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
 
    return true;
 }
@@ -1514,7 +1517,7 @@ static bool gfx_animation_ticker_smooth_fw(
    if (src_str_len < 1)
       goto end;
 
-   src_str_width = src_str_len * glyph_width;
+   src_str_width = (unsigned)(src_str_len * glyph_width);
 
    /* If src string width is <= text field width, we
     * can just copy the entire string */
@@ -1570,7 +1573,7 @@ static bool gfx_animation_ticker_smooth_fw(
    if ((spacer_len = utf8len(ticker->spacer)) < 1)
       goto end;
 
-   spacer_width          = spacer_len * glyph_width;
+   spacer_width          = (unsigned)(spacer_len * glyph_width);
 
    /* Determine animation type */
    switch (ticker->type_enum)
@@ -1611,8 +1614,6 @@ static bool gfx_animation_ticker_smooth_fw(
          unsigned char_offset = 0;
          unsigned num_chars   = 0;
 
-         ticker->dst_str[0] = '\0';
-
          gfx_animation_ticker_smooth_generic_fw(
                ticker->idx,
                src_str_width, src_str_len, glyph_width, ticker->field_width,
@@ -1623,6 +1624,8 @@ static bool gfx_animation_ticker_smooth_fw(
             utf8cpy(
                   ticker->dst_str, ticker->dst_str_len,
                   utf8skip(ticker->src_str, char_offset), num_chars);
+         else
+            ticker->dst_str[0] = '\0';
 
          if (ticker->dst_str_width)
             *ticker->dst_str_width = num_chars * glyph_width;
@@ -1633,7 +1636,7 @@ static bool gfx_animation_ticker_smooth_fw(
 
    success                  = true;
    is_active                = true;
-   p_anim->ticker_is_active = true;
+   p_anim->flags           |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
 
 end:
    if (!success)
@@ -1835,8 +1838,6 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
          unsigned char_offset = 0;
          unsigned num_chars   = 0;
 
-         ticker->dst_str[0] = '\0';
-
          gfx_animation_ticker_smooth_generic(
                ticker->idx,
                src_char_widths, src_str_len,
@@ -1849,6 +1850,8 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
             utf8cpy(
                   ticker->dst_str, ticker->dst_str_len,
                   utf8skip(ticker->src_str, char_offset), num_chars);
+         else
+            ticker->dst_str[0] = '\0';
 
          break;
       }
@@ -1856,7 +1859,7 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
 
    success                  = true;
    is_active                = true;
-   p_anim->ticker_is_active = true;
+   p_anim->flags           |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
 
 end:
 
@@ -1887,6 +1890,7 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
 {
    char *wrapped_str            = NULL;
    size_t wrapped_str_len       = 0;
+   size_t line_ticker_str_len   = 0;
    struct string_list lines     = {0};
    size_t line_offset           = 0;
    bool success                 = false;
@@ -1903,7 +1907,8 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
       goto end;
 
    /* Line wrap input string */
-   wrapped_str_len = strlen(line_ticker->str) + 1 + 10; /* 10 bytes use for inserting '\n' */
+   line_ticker_str_len = strlen(line_ticker->str);
+   wrapped_str_len     = line_ticker_str_len + 1 + 10; /* 10 bytes use for inserting '\n' */
    if (!(wrapped_str = (char*)malloc(wrapped_str_len)))
       goto end;
    wrapped_str[0] = '\0';
@@ -1912,6 +1917,7 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
          wrapped_str,
          wrapped_str_len,
          line_ticker->str,
+         line_ticker_str_len,
          (int)line_ticker->line_len,
          100, 0);
 
@@ -1959,7 +1965,7 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
 
    success                  = true;
    is_active                = true;
-   p_anim->ticker_is_active = true;
+   p_anim->flags           |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
 
 end:
 
@@ -1980,6 +1986,7 @@ end:
 bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *line_ticker)
 {
    char *wrapped_str              = NULL;
+   size_t line_ticker_src_len     = 0;
    size_t wrapped_str_len         = 0;
    struct string_list lines       = {0};
    int glyph_width                = 0;
@@ -1994,11 +2001,11 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
    bool success                   = false;
    bool is_active                 = false;
    gfx_animation_t *p_anim        = &anim_st;
-   const char *wideglyph_str      = msg_hash_get_wideglyph_str();
+   const char *wideglyph_str      = NULL;
    int wideglyph_width            = 100;
-   void (*word_wrap_func)(char *dst, size_t dst_size, const char *src,
-         int line_width, int wideglyph_width, unsigned max_lines)
-      = wideglyph_str ? word_wrap_wideglyph : word_wrap;
+   void (*word_wrap_func)(char *dst, size_t dst_size,
+         const char *src, size_t src_len,
+         int line_width, int wideglyph_width, unsigned max_lines);
 
    /* Sanity check */
    if (!line_ticker)
@@ -2023,17 +2030,18 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
          line_ticker->font, "a", 1, line_ticker->font_scale)) <= 0)
       goto end;
 
-   if (wideglyph_str)
+   if ((wideglyph_str = msg_hash_get_wideglyph_str()))
    {
-      wideglyph_width = font_driver_get_message_width(
+      int new_glyph_width = font_driver_get_message_width(
          line_ticker->font, wideglyph_str, strlen(wideglyph_str),
          line_ticker->font_scale);
       
-      if (wideglyph_width > 0)
-         wideglyph_width = wideglyph_width * 100 / glyph_width;
-      else
-         wideglyph_width = 100;
+      if (new_glyph_width > 0)
+         wideglyph_width  = new_glyph_width * 100 / glyph_width;
+      word_wrap_func      = word_wrap_wideglyph;
    }
+   else
+      word_wrap_func      = word_wrap;
 
    /* > Height */
    if ((glyph_height = font_driver_get_line_height(
@@ -2048,8 +2056,10 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
       goto end;
 
    /* Line wrap input string */
-   wrapped_str_len = strlen(line_ticker->src_str) + 1 + 10; /* 10 bytes use for inserting '\n' */
-   if (!(wrapped_str = (char*)malloc(wrapped_str_len)))
+   line_ticker_src_len = strlen(line_ticker->src_str);
+   /* 10 bytes use for inserting '\n' */
+   wrapped_str_len     = line_ticker_src_len + 1 + 10;
+   if (!(wrapped_str   = (char*)malloc(wrapped_str_len)))
       goto end;
    wrapped_str[0] = '\0';
 
@@ -2057,6 +2067,7 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
          wrapped_str,
          wrapped_str_len,
          line_ticker->src_str,
+         line_ticker_src_len,
          (int)line_len,
          wideglyph_width, 0);
 
@@ -2148,7 +2159,7 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
 
    success                  = true;
    is_active                = true;
-   p_anim->ticker_is_active = true;
+   p_anim->flags           |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
 
 end:
 
@@ -2202,10 +2213,10 @@ bool gfx_animation_kill_by_tag(uintptr_t *tag)
        * > Cannot modify p_anim->list now, so schedule a
        *   delete for when the gfx_animation_update() loop
        *   is complete */
-      if (p_anim->in_update)
+      if (p_anim->flags & GFX_ANIM_FLAG_IN_UPDATE)
       {
          t->deleted              = true;
-         p_anim->pending_deletes = true;
+	 p_anim->flags          |= GFX_ANIM_FLAG_PENDING_DELETES;
       }
       else
       {
@@ -2219,7 +2230,7 @@ bool gfx_animation_kill_by_tag(uintptr_t *tag)
     * (otherwise any entries that are simultaneously added
     * and deleted inside gfx_animation_update() won't get
     * deleted at all, producing utter chaos) */
-   if (p_anim->in_update)
+   if (p_anim->flags & GFX_ANIM_FLAG_IN_UPDATE)
    {
       for (i = 0; i < RBUF_LEN(p_anim->pending); ++i)
       {

@@ -276,12 +276,22 @@ static bool video_shader_parse_pass(config_file_t *conf,
    strlcpy(srgb_output_buf, "srgb_framebuffer", sizeof(srgb_output_buf));
    strlcat(srgb_output_buf, formatted_num,      sizeof(srgb_output_buf));
    if (config_get_bool(conf, srgb_output_buf, &tmp_bool))
-      pass->fbo.srgb_fbo = tmp_bool;
+   {
+      if (tmp_bool)
+         pass->fbo.flags |=  FBO_SCALE_FLAG_SRGB_FBO;
+      else
+         pass->fbo.flags &= ~FBO_SCALE_FLAG_SRGB_FBO;
+   }
 
    strlcpy(fp_fbo_buf, "float_framebuffer", sizeof(fp_fbo_buf));
    strlcat(fp_fbo_buf, formatted_num,       sizeof(fp_fbo_buf));
    if (config_get_bool(conf, fp_fbo_buf, &tmp_bool))
-      pass->fbo.fp_fbo = tmp_bool;
+   {
+      if (tmp_bool)
+         pass->fbo.flags |=  FBO_SCALE_FLAG_FP_FBO;
+      else
+         pass->fbo.flags &= ~FBO_SCALE_FLAG_FP_FBO;
+   }
 
    strlcpy(mipmap_buf, "mipmap_input",      sizeof(mipmap_buf));
    strlcat(mipmap_buf, formatted_num,       sizeof(mipmap_buf));
@@ -315,7 +325,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    else if (!*scale_type_x && !*scale_type_y)
       return true;
 
-   scale->valid   = true;
+   scale->flags  |= FBO_SCALE_FLAG_VALID;
    scale->type_x  = RARCH_SCALE_INPUT;
    scale->type_y  = RARCH_SCALE_INPUT;
    scale->scale_x = 1.0;
@@ -717,15 +727,15 @@ static const char *scale_type_to_str(enum gfx_scale_type type)
 
 static void shader_write_scale_dim(config_file_t *conf,
       const char *dim,
+      const char *formatted_num,
       enum gfx_scale_type type, 
       float scale,
-      unsigned absolute, 
-      unsigned i)
+      unsigned absolute)
 {
    char key[64];
    char dim_str[64];
-   dim_str[0] = '\0';
-   snprintf(dim_str, sizeof(dim_str), "%s%u", dim, i);
+   strlcpy(dim_str, dim, sizeof(dim_str));
+   strlcat(dim_str, formatted_num, sizeof(dim_str));
 
    strlcpy(key, "scale_type_", sizeof(key));
    strlcat(key, dim_str,       sizeof(key));
@@ -740,26 +750,22 @@ static void shader_write_scale_dim(config_file_t *conf,
 }
 
 static void shader_write_fbo(config_file_t *conf,
-      const struct gfx_fbo_scale *fbo, unsigned i)
+      const char *formatted_num,
+      const struct gfx_fbo_scale *fbo)
 {
    char key[64];
-   char formatted_num[8];
-   formatted_num[0] = '\0';
-
-   snprintf(formatted_num, sizeof(formatted_num), "%u", i);
-
    strlcpy(key, "float_framebuffer", sizeof(key));
    strlcat(key, formatted_num,       sizeof(key));
-   config_set_string(conf, key, fbo->fp_fbo ? "true" : "false");
+   config_set_string(conf, key, (fbo->flags & FBO_SCALE_FLAG_FP_FBO) ? "true" : "false");
    strlcpy(key, "srgb_framebuffer", sizeof(key));
    strlcat(key, formatted_num,      sizeof(key));
-   config_set_string(conf, key, fbo->srgb_fbo ? "true" : "false");
+   config_set_string(conf, key, (fbo->flags & FBO_SCALE_FLAG_SRGB_FBO) ? "true" : "false");
 
-   if (!fbo->valid)
+   if (!(fbo->flags & FBO_SCALE_FLAG_VALID))
       return;
 
-   shader_write_scale_dim(conf, "x", fbo->type_x, fbo->scale_x, fbo->abs_x, i);
-   shader_write_scale_dim(conf, "y", fbo->type_y, fbo->scale_y, fbo->abs_y, i);
+   shader_write_scale_dim(conf, "x", formatted_num, fbo->type_x, fbo->scale_x, fbo->abs_x);
+   shader_write_scale_dim(conf, "y", formatted_num, fbo->type_y, fbo->scale_y, fbo->abs_y);
 }
 
 /**
@@ -823,7 +829,6 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
 
       config_set_path(conf, key, tmp_rel);
 
-
       if (pass->filter != RARCH_FILTER_UNSPEC)
       {
          strlcpy(key, "filter_linear", sizeof(key));
@@ -853,7 +858,7 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
       strlcat(key, formatted_num, sizeof(key));
       config_set_string(conf, key, pass->alias);
 
-      shader_write_fbo(conf, &pass->fbo, i);
+      shader_write_fbo(conf, formatted_num, &pass->fbo);
    }
 
    /* Write shader parameters which are different than the default shader values */
@@ -1424,7 +1429,8 @@ static bool video_shader_write_referenced_preset(
             continue_saving_ref = false;
          }
 
-         if (continue_saving_ref && fbo->fp_fbo != root_fbo->fp_fbo)
+         if (      continue_saving_ref 
+               && (fbo->flags & FBO_SCALE_FLAG_FP_FBO) != (root_fbo->flags & FBO_SCALE_FLAG_FP_FBO))
          {
 #ifdef DEBUG
             RARCH_WARN("[Shaders]: Pass %u fp_fbo", i);
@@ -1432,7 +1438,9 @@ static bool video_shader_write_referenced_preset(
             continue_saving_ref = false;
          }
 
-         if (continue_saving_ref && fbo->srgb_fbo != root_fbo->srgb_fbo)
+         if (continue_saving_ref 
+               && (fbo->flags & FBO_SCALE_FLAG_SRGB_FBO) != (root_fbo->flags &
+                  FBO_SCALE_FLAG_SRGB_FBO))
          {
 #ifdef DEBUG
             RARCH_WARN("[Shaders]: Pass %u srgb_fbo", i);
@@ -1440,7 +1448,8 @@ static bool video_shader_write_referenced_preset(
             continue_saving_ref = false;
          }
 
-         if (continue_saving_ref && fbo->valid != root_fbo->valid)
+         if (continue_saving_ref 
+               && ((fbo->flags & FBO_SCALE_FLAG_VALID) != (root_fbo->flags & FBO_SCALE_FLAG_VALID)))
          {
 #ifdef DEBUG
             RARCH_WARN("[Shaders]: Pass %u valid", i);
@@ -1668,7 +1677,6 @@ static bool override_shader_values(config_file_t *override_conf,
 {
    unsigned i;
    bool return_val                     = false;
-   struct config_entry_list *entry     = NULL;
 
    if (!shader || !override_conf) 
       return 0;
@@ -1680,10 +1688,8 @@ static bool override_shader_values(config_file_t *override_conf,
        * see if there is an entry for each in the override config */
       for (i = 0; i < shader->num_parameters; i++)
       {
-         entry = config_get_entry(override_conf, shader->parameters[i].id);
-
          /* If the parameter is in the reference config */
-         if (entry)
+         if (config_get_entry(override_conf, shader->parameters[i].id))
          {
             struct video_shader_parameter *parameter = 
                (struct video_shader_parameter*)
@@ -1723,7 +1729,7 @@ static bool override_shader_values(config_file_t *override_conf,
       for (i = 0; i < shader->luts; i++)
       {
          /* If the texture is defined in the reference config */
-         if ((entry = config_get_entry(override_conf, shader->lut[i].id)))
+         if (config_get_entry(override_conf, shader->lut[i].id))
          {
             /* Texture path from shader the config */
             config_get_path(override_conf, shader->lut[i].id,
@@ -2033,7 +2039,7 @@ enum rarch_shader_type video_shader_get_type_from_ext(
    if (string_is_empty(ext))
       return RARCH_SHADER_NONE;
 
-   if (strlen(ext) > 1 && ext[0] == '.')
+   if ((ext[0] != '\0') && (ext[0] == '.') && (ext[1] != '\0'))
       ext++;
 
    if (is_preset)
@@ -2530,7 +2536,7 @@ bool apply_shader(
             /* reflect in shader manager */
             if (menu_shader_manager_set_preset(
                      shader, type, preset_path, false))
-               shader->modified = false;
+               shader->flags &= ~SHDR_FLAG_MODIFIED;
 #endif
          }
          else
@@ -2539,17 +2545,22 @@ bool apply_shader(
          if (message)
          {
             /* Display message */
+            const char *msg_shader = msg_hash_to_str(MSG_SHADER);
+            size_t _len            = strlcpy(msg, msg_shader, sizeof(msg));
+            msg[_len  ]            = ':';
+            msg[_len+1]            = ' ';
+            msg[_len+2]            = '\0';
             if (preset_file)
-               snprintf(msg, sizeof(msg),
-                     "%s: \"%s\"",
-                     msg_hash_to_str(MSG_SHADER),
-                     preset_file);
+            {
+               msg[_len+2]         = '"';
+               msg[_len+3]         = '\0';
+               _len                = strlcat(msg, preset_file, sizeof(msg));
+               msg[_len  ]        = '"';
+               msg[_len+1]        = '\0';
+            }
             else
-               snprintf(msg, sizeof(msg),
-                     "%s: %s", 
-                     msg_hash_to_str(MSG_SHADER),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE)
-                     );
+               strlcat(msg, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), sizeof(msg));
+
 #ifdef HAVE_GFX_WIDGETS
             if (dispwidget_get_ptr()->active)
                gfx_widget_set_generic_message(msg, 2000);
@@ -2595,7 +2606,8 @@ const char *retroarch_get_shader_preset(void)
    bool video_shader_enable       = settings->bools.video_shader_enable;
    unsigned video_shader_delay    = settings->uints.video_shader_delay;
    bool auto_shaders_enable       = settings->bools.auto_shaders_enable;
-   bool cli_shader_disable        = video_st->cli_shader_disable;
+   bool cli_shader_disable        = video_st->flags &
+      VIDEO_FLAG_CLI_SHADER_DISABLE;
 
    if (!video_shader_enable)
       return NULL;
@@ -2611,9 +2623,10 @@ const char *retroarch_get_shader_preset(void)
       return runloop_st->runtime_shader_preset_path;
 
    /* load auto-shader once, --set-shader works like a global auto-shader */
-   if (video_st->shader_presets_need_reload && !cli_shader_disable)
+   if (     (video_st->flags & VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD) 
+         && !cli_shader_disable)
    {
-      video_st->shader_presets_need_reload = false;
+      video_st->flags &= ~VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD;
 
       if (video_shader_is_supported(
                video_shader_parse_type(video_st->cli_shader_path)))
@@ -2639,4 +2652,27 @@ const char *retroarch_get_shader_preset(void)
    }
 
    return NULL;
+}
+
+void video_shader_toggle(settings_t *settings)
+{
+   bool toggle                 = !settings->bools.video_shader_enable;
+   bool refresh                = false;
+   struct video_shader *shader = menu_shader_get();
+
+   shader->flags              |=  SHDR_FLAG_MODIFIED;
+   if (toggle)
+      shader->flags           &= ~SHDR_FLAG_DISABLED;
+   else
+      shader->flags           |=  SHDR_FLAG_DISABLED;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+
+   command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+
+   /* TODO/FIXME: Due to general_write_handler being called twice,
+    * this has be done in this order in order to truly disable */
+   if (!toggle)
+      configuration_set_bool(settings, settings->bools.video_shader_enable, toggle);
 }

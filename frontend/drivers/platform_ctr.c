@@ -20,7 +20,6 @@
 #include <ctype.h>
 #include <boolean.h>
 #include <sys/stat.h>
-#include <errno.h>
 #include <dirent.h>
 
 #include <3ds.h>
@@ -85,7 +84,7 @@ static void get_first_valid_core(char* path_return, size_t len)
          if (strlen(ent->d_name) > strlen(extension) 
                && !strcmp(ent->d_name + strlen(ent->d_name) - strlen(extension), extension))
          {
-            strcpy_literal(path_return, "sdmc:/retroarch/cores/");
+            strlcpy(path_return, "sdmc:/retroarch/cores/", len);
             strlcat(path_return, ent->d_name, len);
             break;
          }
@@ -130,13 +129,10 @@ static void frontend_ctr_get_env(int* argc, char* argv[],
                       "overlays/ctr", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], g_defaults.dirs[DEFAULT_DIR_PORT],
-                      "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
    fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_PORT],
                       FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
-
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_BOTTOM_ASSETS], g_defaults.dirs[DEFAULT_DIR_ASSETS],
                       "ctr", sizeof(g_defaults.dirs[DEFAULT_DIR_BOTTOM_ASSETS]));
 
@@ -155,24 +151,6 @@ static void frontend_ctr_deinit(void* data)
    (void)data;
 
 #ifndef IS_SALAMANDER
-   /* Note: frontend_ctr_deinit() is normally called when
-    * forking to load new content. When this happens, the
-    * log messages generated in frontend_ctr_exec() *must*
-    * be printed to screen (provided bottom screen is not
-    * turned off...), since the 'first core launch' warning
-    * can prevent sdcard corruption. We therefore close any
-    * existing log file, enable verbose logging and revert
-    * to console output. (Normal logging will be resumed
-    * once retroarch.cfg has been re-read) */
-   retro_main_log_file_deinit();
-   verbosity_enable();
-   retro_main_log_file_init(NULL, false);
-
-#ifdef CONSOLE_LOG
-   if (ctr_bottom_screen_enabled && (ctr_fork_mode == FRONTEND_FORK_NONE))
-      wait_for_input();
-#endif
-
    CFGU_GetModelNintendo2DS(&not_2DS);
 
    if (not_2DS && srvGetServiceHandle(&lcd_handle, "gsp::Lcd") >= 0)
@@ -260,23 +238,9 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
 #endif
 
       if (envIsHomebrew())
-      {
          exec_3dsx_no_path_in_args(path, (const char**)arg_data);
-      }
       else
-      {
-         RARCH_WARN("\n");
-         RARCH_WARN("\n");
-         RARCH_WARN("Warning:\n");
-         RARCH_WARN("First core launch may take 20\n");
-         RARCH_WARN("seconds! Do not force quit\n");
-         RARCH_WARN("before then or your memory\n");
-         RARCH_WARN("card may be corrupted!\n");
-         RARCH_WARN("\n");
-         RARCH_WARN("\n");
-
          exec_cia(path, (const char**)arg_data);
-      }
 
       /* couldnt launch new core, but context
          is corrupt so we have to quit */
@@ -556,12 +520,12 @@ static int frontend_ctr_parse_drive_list(void* data, bool load_content)
    if (!list)
       return -1;
 
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          "sdmc:/",
          msg_hash_to_str(
             MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #endif
 
    return 0;
@@ -610,7 +574,7 @@ static void frontend_ctr_get_os(char* s, size_t len, int* major, int* minor)
    OS_VersionBin cver;
    OS_VersionBin nver;
 
-   strcpy_literal(s, "3DS OS");
+   strlcpy(s, "3DS OS", len);
    Result data_invalid = osGetSystemVersionData(&nver, &cver);
    if (data_invalid == 0)
    {
@@ -635,26 +599,26 @@ static void frontend_ctr_get_name(char* s, size_t len)
    switch (device_model)
    {
       case 0:
-         strcpy_literal(s, "Old 3DS");
+         strlcpy(s, "Old 3DS", len);
          break;
       case 1:
-         strcpy_literal(s, "Old 3DS XL");
+         strlcpy(s, "Old 3DS XL", len);
          break;
       case 2:
-         strcpy_literal(s, "New 3DS");
+         strlcpy(s, "New 3DS", len);
          break;
       case 3:
-         strcpy_literal(s, "Old 2DS");
+         strlcpy(s, "Old 2DS", len);
          break;
       case 4:
-         strcpy_literal(s, "New 3DS XL");
+         strlcpy(s, "New 3DS XL", len);
          break;
       case 5:
-         strcpy_literal(s, "New 2DS XL");
+         strlcpy(s, "New 2DS XL", len);
          break;
 
       default:
-         strcpy_literal(s, "Unknown Device");
+         strlcpy(s, "Unknown Device", len);
          break;
    }
 }

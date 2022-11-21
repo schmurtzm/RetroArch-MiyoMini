@@ -29,6 +29,9 @@
 
 #define SPLASH_SHM_NAME "retroarch-wayland-vk-splash"
 
+#define APP_ID "org.libretro.RetroArch"
+#define WINDOW_TITLE "RetroArch"
+
 #ifdef HAVE_LIBDECOR_H
 #include <libdecor.h>
 #endif
@@ -368,18 +371,17 @@ static shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
    if (size <= 0)
       return NULL;
 
-   fd = create_shm_file(size);
-   if (fd < 0)
+   if ((fd = create_shm_file(size)) < 0)
    {
-      RARCH_ERR("[Wayland] [SHM]: Creating a buffer file for %d B failed: %s\n",
-         size, strerror(errno));
+      RARCH_ERR("[Wayland] [SHM]: Creating a buffer file for %d B failed\n",
+         size);
       return NULL;
    }
 
    data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
    if (data == MAP_FAILED)
    {
-      RARCH_ERR("[Wayland] [SHM]: mmap failed: %s\n", strerror(errno));
+      RARCH_ERR("[Wayland] [SHM]: mmap failed\n");
       close(fd);
       return NULL;
    }
@@ -465,11 +467,9 @@ bool gfx_ctx_wl_init_common(
    if (!wl)
       return false;
 
-
 #ifdef HAVE_LIBDECOR_H
-#ifdef HAVE_DYNAMIC
-   wl->libdecor = dylib_load("libdecor-0.so");
-   if (wl->libdecor)
+#ifdef HAVE_DYLIB
+   if ((wl->libdecor = dylib_load("libdecor-0.so")))
    {
 #define RA_WAYLAND_SYM(rc,fn,params) wl->fn = (rc (*) params)dylib_proc(wl->libdecor, #fn);
 #include "wayland/libdecor_sym.h"
@@ -545,8 +545,8 @@ bool gfx_ctx_wl_init_common(
             goto error;
          }
 
-         wl->libdecor_frame_set_app_id(wl->libdecor_frame, "retroarch");
-         wl->libdecor_frame_set_title(wl->libdecor_frame, "RetroArch");
+         wl->libdecor_frame_set_app_id(wl->libdecor_frame, APP_ID);
+         wl->libdecor_frame_set_title(wl->libdecor_frame, WINDOW_TITLE);
          wl->libdecor_frame_map(wl->libdecor_frame);
       }
 
@@ -572,8 +572,8 @@ bool gfx_ctx_wl_init_common(
       wl->xdg_toplevel = xdg_surface_get_toplevel(wl->xdg_surface);
       xdg_toplevel_add_listener(wl->xdg_toplevel, &toplevel_listener->xdg_toplevel_listener, wl);
 
-      xdg_toplevel_set_app_id(wl->xdg_toplevel, "retroarch");
-      xdg_toplevel_set_title(wl->xdg_toplevel, "RetroArch");
+      xdg_toplevel_set_app_id(wl->xdg_toplevel, APP_ID);
+      xdg_toplevel_set_title(wl->xdg_toplevel, WINDOW_TITLE);
 
       if (wl->deco_manager)
          wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(

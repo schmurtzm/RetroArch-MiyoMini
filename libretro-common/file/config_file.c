@@ -211,7 +211,7 @@ static char *config_file_extract_value(char *line)
       line++;
 
    /* Note: From this point on, an empty value
-    * string is valid - and in this case, strdup("")
+    * string is valid - and in this case, strldup("", sizeof(""))
     * will be returned
     * > If we instead return NULL, the the entry
     *   is ignored completely - which means we cannot
@@ -254,7 +254,7 @@ static char *config_file_extract_value(char *line)
          return strdup(value);
    }
 
-   return strdup("");
+   return strldup("", sizeof(""));
 }
 
 /* Move semantics? */
@@ -1511,16 +1511,5 @@ bool config_get_entry_list_next(struct config_file_entry *entry)
    entry->key   = next->key;
    entry->value = next->value;
    entry->next  = next->next;
-   return true;
-}
-
-bool config_file_exists(const char *path)
-{
-   config_file_t conf;
-   config_file_initialize(&conf);
-   if (config_file_load_internal(&conf, path, 0, NULL) == 1)
-      return false;
-
-   config_file_deinitialize(&conf);
    return true;
 }

@@ -578,13 +578,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
    "Vlastnosti CPU"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "CPU Jadrá:"
-   )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CPU_CORES,
-   "Množstvo jadier CPU."
+   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
+   "Architektúra CPU"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -1160,6 +1156,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
    "Zmeniť východzie zložky umiestnenia súborov."
    )
+
+/* Core option category placeholders for icons */
 
 #ifdef HAVE_MIST
 #endif
@@ -2093,8 +2091,50 @@ MSG_HASH(
 /* Settings > Input > Menu Controls */
 
 
-
 /* Settings > Input > Hotkeys */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   "Ukončiť"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_QUIT_KEY,
+   "Ukončí RetroArch, zaistí zapísanie všetky úložných dát a nastavení na disk."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
+   "Zavrieť obsah"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
+   "Previnúť"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
+   "Zapína/vypína pozastavenie bežiaceho obsahu."
+   )
+
+
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
+   "Zvýši index aktuálne zvoleného slotu na ukladanie stavu."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
+   "Zníži index aktuálne zvoleného slotu na ukladanie stavu."
+   )
+
+
+
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
+   "Zaznamenanie vstupov (prepínanie)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
+   "Zapína/vypína zaznamenávanie vstupov hrania v .bsv formáte."
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
@@ -2104,70 +2144,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
    "Prepína medzi režimom na celú obrazovku a zobrazení v okne."
    )
+
+
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
-   "Zavrieť obsah"
+   MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+   "Služba AI"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_CLOSE_CONTENT_KEY,
-   "Zavrie aktuálny obsah. Akékoľvek neuložené zmeny sa môžu stratiť."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-   "Vypnúť RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_QUIT_KEY,
-   "Ukončí RetroArch, zaistí zapísanie všetky úložných dát a nastavení na disk."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
-   "Slot na uloženie stavu +"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
-   "Zvýši index aktuálne zvoleného slotu na ukladanie stavu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
-   "Slot na uloženie stavu -"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
-   "Zníži index aktuálne zvoleného slotu na ukladanie stavu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
-   "Previnúť"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
-   "Previnie aktuálny obsah počas držania klávesy.\n'Podpora prevíjania' musí byť povolená."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
-   "Zaznamenanie vstupov (prepínanie)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
-   "Zapína/vypína zaznamenávanie vstupov hrania v .bsv formáte."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
-   "Prestávka (prepínanie)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "Zapína/vypína pozastavenie bežiaceho obsahu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
-   "Postupovanie po snímkach"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_FRAMEADVANCE,
-   "Postúpiť o jednu snímku počas pozastaveného obsahu."
-   )
+
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
    "Odoslať ladiace informácie"
@@ -2175,10 +2159,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SEND_DEBUG_INFO,
    "Odoslať diagnostické informácie o zariadení a nastaveniach RetroArch na naše serveri na analýzu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
-   "Služba AI"
    )
 
 /* Settings > Input > Port # Controls */
@@ -2394,10 +2374,6 @@ MSG_HASH(
    "Informácie o jadre"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-   "Kurzor"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
    "Profily herného ovládača"
    )
@@ -2453,6 +2429,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_ALL,
    "Všetko"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_VIEW,
+   "Zobrazenie"
    )
 
 /* Playlist > Playlist Item */
@@ -3058,10 +3038,6 @@ MSG_HASH(
    "Natívne"
    )
 MSG_HASH(
-   MSG_DEVICE_DISCONNECTED_FROM_PORT,
-   "Zariadenie odpojené z portu"
-   )
-MSG_HASH(
    MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
    "Prijatý neznámy netplay príkaz"
    )
@@ -3176,10 +3152,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_DEFAULT,
    "Dotknite sa dotykovej obrazovky, \naby ste prešli do ponuky Retroarch"
-   )
-MSG_HASH(
-   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
-   "bottom_menu.png nebol nájdený\nv priečinku assets/ctr"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,

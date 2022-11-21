@@ -27,7 +27,6 @@
 
 #include "../font_driver.h"
 #include "../../configuration.h"
-#include "../../verbosity.h"
 
 typedef struct
 {
@@ -50,10 +49,7 @@ static void *caca_font_init(void *data,
    if (!font_renderer_create_default(
             &font->font_driver,
             &font->font_data, font_path, font_size))
-   {
-      RARCH_WARN("Couldn't initialize font renderer.\n");
       return NULL;
-   }
 
    return font;
 }
@@ -72,7 +68,7 @@ static void caca_font_free(void *data, bool is_threaded)
 }
 
 static int caca_font_get_message_width(void *data, const char *msg,
-      unsigned msg_len, float scale)
+      size_t msg_len, float scale)
 {
    return 0;
 }

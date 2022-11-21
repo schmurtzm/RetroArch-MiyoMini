@@ -341,7 +341,8 @@ command_t* command_stdin_new(void)
 
 bool command_get_config_param(command_t *cmd, const char* arg)
 {
-   char reply[8192]             = {0};
+   size_t _len;
+   char reply[8192];
    const char      *value       = "unsupported";
    settings_t       *settings   = config_get_ptr();
    bool       video_fullscreen  = settings->bools.video_fullscreen;
@@ -374,7 +375,11 @@ bool command_get_config_param(command_t *cmd, const char* arg)
       value = path_username;
    /* TODO: query any string */
 
-   snprintf(reply, sizeof(reply), "GET_CONFIG_PARAM %s %s\n", arg, value);
+   strlcpy(reply, "GET_CONFIG_PARAM ", sizeof(reply));
+   _len          = strlcat(reply, arg, sizeof(reply));
+   reply[_len  ] = ' ';
+   reply[_len+1] = '\0';
+   strlcat(reply, value, sizeof(reply));
    cmd->replier(cmd, reply, strlen(reply));
    return true;
 }
@@ -647,7 +652,7 @@ bool command_read_ram(command_t *cmd, const char *arg)
    unsigned int nbytes          = 0;
    unsigned int alloc_size      = 0;
    unsigned int addr            = -1;
-   unsigned int len             = 0;
+   size_t len                   = 0;
 
    if (sscanf(arg, "%x %u", &addr, &nbytes) != 2)
       return true;
@@ -700,9 +705,10 @@ bool command_write_ram(command_t *cmd, const char *arg)
 
 bool command_version(command_t *cmd, const char* arg)
 {
-   char reply[256]             = {0};
-
-   snprintf(reply, sizeof(reply), "%s\n", PACKAGE_VERSION);
+   char reply[256];
+   size_t _len   = strlcpy(reply, PACKAGE_VERSION, sizeof(reply));
+   reply[_len  ] = '\n';
+   reply[_len+1] = '\0';
    cmd->replier(cmd, reply, strlen(reply));
 
    return true;
@@ -780,7 +786,7 @@ uint8_t *command_memory_get_pointer(
          strlcpy(reply_at, " -1 descriptor data is readonly\n", len);
       else
       {
-         *max_bytes = (desc->core.len - offset);
+         *max_bytes = (unsigned int)(desc->core.len - offset);
          return (uint8_t*)desc->core.ptr + desc->core.offset + offset;
       }
    }
@@ -791,35 +797,35 @@ uint8_t *command_memory_get_pointer(
 
 bool command_get_status(command_t *cmd, const char* arg)
 {
-   char reply[4096]            = {0};
-   bool contentless            = false;
-   bool is_inited              = false;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   char reply[4096];
+   uint8_t flags                  = content_get_flags();
 
-   content_get_status(&contentless, &is_inited);
-
-   if (!is_inited)
-       strcpy_literal(reply, "GET_STATUS CONTENTLESS");
-   else
+   if (flags & CONTENT_ST_FLAG_IS_INITED)
    {
-       /* add some content info */
-       const char *status       = "PLAYING";
-       const char *content_name = path_basename(path_get(RARCH_PATH_BASENAME));  /* filename only without ext */
-       int content_crc32        = content_get_crc();
-       const char* system_id    = NULL;
-       core_info_t *core_info   = NULL;
+      /* add some content info */
+      runloop_state_t *runloop_st = runloop_state_get_ptr();
+      const char *status          = "PLAYING";
+      const char *content_name    = path_basename(path_get(RARCH_PATH_BASENAME));  /* filename only without ext */
+      int content_crc32           = content_get_crc();
+      const char* system_id       = NULL;
+      core_info_t *core_info      = NULL;
 
-       core_info_get_current_core(&core_info);
+      reply[0]                    = '\0';
 
-       if (runloop_st->paused)
-          status                = "PAUSED";
-       if (core_info)
-          system_id             = core_info->system_id;
-       if (!system_id)
-          system_id             = runloop_st->system.info.library_name;
+      core_info_get_current_core(&core_info);
 
-       snprintf(reply, sizeof(reply), "GET_STATUS %s %s,%s,crc32=%x\n", status, system_id, content_name, content_crc32);
+      if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+         status                   = "PAUSED";
+      if (core_info)
+         system_id                = core_info->system_id;
+      if (!system_id)
+         system_id                = runloop_st->system.info.library_name;
+
+      snprintf(reply, sizeof(reply), "GET_STATUS %s %s,%s,crc32=%x\n",
+            status, system_id, content_name, content_crc32);
    }
+   else
+       strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
 
    cmd->replier(cmd, reply, strlen(reply));
 
@@ -913,17 +919,23 @@ void command_event_set_volume(
       bool widgets_active,
       bool audio_driver_mute_enable)
 {
+   size_t _len;
    char msg[128];
-   float new_volume            = settings->floats.audio_volume + gain;
-
-   new_volume                  = MAX(new_volume, -80.0f);
-   new_volume                  = MIN(new_volume, 12.0f);
-
+   float new_volume = settings->floats.audio_volume + gain;
+   new_volume       = MAX(new_volume, -80.0f);
+   new_volume       = MIN(new_volume, 12.0f);
    configuration_set_float(settings, settings->floats.audio_volume, new_volume);
-
-   snprintf(msg, sizeof(msg), "%s: %.1f dB",
-         msg_hash_to_str(MSG_AUDIO_VOLUME),
+   _len             = strlcpy(msg, msg_hash_to_str(MSG_AUDIO_VOLUME),
+         sizeof(msg));
+   msg[_len  ]      = ':';
+   msg[++_len]      = ' ';
+   msg[++_len]      = '\0';
+   _len            += snprintf(msg + _len, sizeof(msg) - _len, "%.1f",
          new_volume);
+   msg[_len  ]      = ' ';
+   msg[++_len]      = 'd';
+   msg[++_len]      = 'B';
+   msg[++_len]      = '\0';
 
 #if defined(HAVE_GFX_WIDGETS)
    if (widgets_active)
@@ -950,17 +962,23 @@ void command_event_set_mixer_volume(
       settings_t *settings,
       float gain)
 {
+   size_t _len;
    char msg[128];
-   float new_volume            = settings->floats.audio_mixer_volume + gain;
-
-   new_volume                  = MAX(new_volume, -80.0f);
-   new_volume                  = MIN(new_volume, 12.0f);
-
+   float new_volume = settings->floats.audio_mixer_volume + gain;
+   new_volume       = MAX(new_volume, -80.0f);
+   new_volume       = MIN(new_volume, 12.0f);
    configuration_set_float(settings, settings->floats.audio_mixer_volume, new_volume);
-
-   snprintf(msg, sizeof(msg), "%s: %.1f dB",
-         msg_hash_to_str(MSG_AUDIO_VOLUME),
+   _len             = strlcpy(msg, msg_hash_to_str(MSG_AUDIO_VOLUME),
+         sizeof(msg));
+   msg[_len  ]      = ':';
+   msg[++_len]      = ' ';
+   msg[++_len]      = '\0';
+   _len            += snprintf(msg + _len, sizeof(msg) - _len, "%.1f",
          new_volume);
+   msg[_len  ]      = ' ';
+   msg[++_len]      = 'd';
+   msg[++_len]      = 'B';
+   msg[++_len]      = '\0';
    runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    RARCH_LOG("[Audio]: %s\n", msg);
@@ -1111,7 +1129,7 @@ bool command_event_resize_windowed_scale(settings_t *settings,
    if (window_scale == 0)
       return false;
 
-   configuration_set_float(settings, settings->floats.video_scale, (float)window_scale);
+   configuration_set_uint(settings, settings->uints.video_scale, window_scale);
 
    if (!video_fullscreen)
       command_event(CMD_EVENT_REINIT, NULL);
@@ -1138,10 +1156,6 @@ bool command_event_save_auto_state(
       return false;
    if (string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))))
       return false;
-#ifdef HAVE_CHEEVOS
-   if (rcheevos_hardcore_active())
-      return false;
-#endif
 
    strlcpy(savestate_name_auto,
          runloop_st->name.savestate,
@@ -1492,10 +1506,9 @@ bool command_event_save_core_config(
       /* In case of collision, find an alternative name. */
       for (i = 0; i < 16; i++)
       {
+         size_t _len = strlcpy(tmp, config_path, sizeof(tmp));
          if (i)
-            snprintf(tmp, sizeof(tmp), "%s-%u", config_path, i);
-         else
-            strlcpy(tmp, config_path, sizeof(tmp));
+            snprintf(tmp + _len, sizeof(tmp) - _len, "-%u", i);
          strlcat(tmp, ".cfg", sizeof(tmp));
 
          if (!path_is_valid(tmp))
@@ -1516,13 +1529,13 @@ bool command_event_save_core_config(
             sizeof(config_path));
    }
 
-   if (runloop_st->overrides_active)
+   if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
    {
       /* Overrides block config file saving,
        * make it appear as overrides weren't enabled
        * for a manual save. */
-      runloop_st->overrides_active      = false;
-      overrides_active                  = true;
+      runloop_st->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
+      overrides_active   = true;
    }
 
 #ifdef HAVE_CONFIGFILE
@@ -1533,7 +1546,10 @@ bool command_event_save_core_config(
       runloop_msg_queue_push(msg, 1, 180, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-   runloop_st->overrides_active = overrides_active;
+   if (overrides_active)
+      runloop_st->flags |=  RUNLOOP_FLAG_OVERRIDES_ACTIVE;
+   else
+      runloop_st->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
 
    return true;
 }
@@ -1571,7 +1587,7 @@ void command_event_save_current_config(enum override_type type)
                strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
                /* set overrides to active so the original config can be
                   restored after closing content */
-               runloop_st->overrides_active = true;
+               runloop_st->flags |= RUNLOOP_FLAG_OVERRIDES_ACTIVE;
             }
             else
                strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_SAVING), sizeof(msg));
@@ -1707,7 +1723,7 @@ bool command_event_disk_control_append_image(
       return false;
 
 #ifdef HAVE_THREADS
-   if (runloop_st->use_sram)
+   if (runloop_st->flags & RUNLOOP_FLAG_USE_SRAM)
       autosave_deinit();
 #endif
 
@@ -1763,10 +1779,10 @@ void command_event_reinit(const int flags)
    command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
 
 #ifdef HAVE_MENU
-   p_disp->framebuf_dirty = true;
+   p_disp->flags |= GFX_DISP_FLAG_FB_DIRTY;
    if (video_fullscreen)
       video_driver_hide_mouse();
-   if (     menu_st->alive 
+   if (     (menu_st->flags & MENU_ST_FLAG_ALIVE)
          && video_st->current_video->set_nonblock_state)
       video_st->current_video->set_nonblock_state(
             video_st->data, false,

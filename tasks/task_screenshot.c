@@ -62,7 +62,7 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
    bool ret                      = false;
 
 #if defined(HAVE_RPNG)
-   if (state->bgr24)
+   if (state->flags & SS_TASK_FLAG_BGR24)
       scaler->in_fmt             = SCALER_FMT_BGR24;
    else if (state->pixel_format_type == RETRO_PIXEL_FORMAT_XRGB8888)
       scaler->in_fmt             = SCALER_FMT_ARGB8888;
@@ -134,9 +134,9 @@ static void task_screenshot_handler(retro_task_t *task)
 
    /* Push screenshot to image history playlist */
 #ifdef HAVE_IMAGEVIEWER
-   if (  ret                        &&
-         !state->silence            &&
-         state->history_list_enable
+   if (       ret
+         && !(state->flags & SS_TASK_FLAG_SILENCE)
+         &&  (state->flags & SS_TASK_FLAG_HISTORY_LIST_ENABLE)
          )
    {
       struct playlist_entry entry = {0};
@@ -156,7 +156,7 @@ static void task_screenshot_handler(retro_task_t *task)
    if (!ret)
    {
       char *msg = strdup(msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT));
-      runloop_msg_queue_push(msg, 1, state->is_paused ? 1 : 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, 1, (state->flags & SS_TASK_FLAG_IS_PAUSED) ? 1 : 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       free(msg);
    }
 
@@ -179,7 +179,7 @@ task_finished:
    /* If display widgets are enabled, state is freed
       in the callback after the notification
       is displayed */
-   if (state && !state->widgets_ready)
+   if (state && !(state->flags & SS_TASK_FLAG_WIDGETS_READY))
 #endif
    {
       free(state);
@@ -203,7 +203,8 @@ static void task_screenshot_callback(retro_task_t *task,
    if (!(state = (screenshot_task_state_t*)task->state))
       return;
 
-   if (!state->silence && state->widgets_ready)
+   if (    !(state->flags & SS_TASK_FLAG_SILENCE)
+         && (state->flags & SS_TASK_FLAG_WIDGETS_READY))
       gfx_widget_screenshot_taken(dispwidget_get_ptr(),
             state->shotname, state->filename);
 
@@ -226,8 +227,7 @@ static bool screenshot_dump(
       bool bgr24,
       void *userbuf,
       bool savestate,
-      bool is_idle,
-      bool is_paused,
+      uint32_t runloop_flags,
       bool fullpath,
       bool use_thread,
       unsigned pixel_format_type)
@@ -235,6 +235,7 @@ static bool screenshot_dump(
    struct retro_system_info system_info;
    uint8_t *buf                   = NULL;
    settings_t *settings           = config_get_ptr();
+   bool history_list_enable       = settings->bools.history_list_enable;
    screenshot_task_state_t *state = (screenshot_task_state_t*)
          calloc(1, sizeof(*state));
 
@@ -243,21 +244,26 @@ static bool screenshot_dump(
    if (fullpath)
       strlcpy(state->filename, name_base, sizeof(state->filename));
 
-   state->is_idle                = is_idle;
-   state->is_paused              = is_paused;
-   state->bgr24                  = bgr24;
+   if (runloop_flags & RUNLOOP_FLAG_IDLE)
+      state->flags              |= SS_TASK_FLAG_IS_IDLE;
+   if (runloop_flags & RUNLOOP_FLAG_PAUSED)
+      state->flags              |= SS_TASK_FLAG_IS_PAUSED;
+   if (bgr24)
+      state->flags              |= SS_TASK_FLAG_BGR24;
    state->height                 = height;
    state->width                  = width;
    state->pitch                  = pitch;
    state->frame                  = frame;
    state->userbuf                = userbuf;
 #if defined(HAVE_GFX_WIDGETS)
-   state->widgets_ready          = gfx_widgets_ready();
-#else
-   state->widgets_ready          = false;
+   if (gfx_widgets_ready())
+      state->flags              |= SS_TASK_FLAG_WIDGETS_READY;
 #endif
-   state->silence                = savestate;
-   state->history_list_enable    = settings->bools.history_list_enable;
+   if (savestate)
+      state->flags              |= SS_TASK_FLAG_SILENCE;
+   
+   if (history_list_enable)
+      state->flags              |= SS_TASK_FLAG_HISTORY_LIST_ENABLE;
    state->pixel_format_type      = pixel_format_type;
 
    if (!fullpath)
@@ -355,23 +361,24 @@ static bool screenshot_dump(
       free(state);
       return false;
    }
-   state->out_buffer = buf;
+   state->out_buffer     = buf;
 #endif
 
    if (use_thread)
    {
       retro_task_t *task = task_init();
 
-      task->type        = TASK_TYPE_BLOCKING;
-      task->state       = state;
-      task->handler     = task_screenshot_handler;
-      task->mute        = savestate;
+      task->type         = TASK_TYPE_BLOCKING;
+      task->state        = state;
+      task->handler      = task_screenshot_handler;
+      task->mute         = savestate;
 #if defined(HAVE_GFX_WIDGETS)
       /* This callback is only required when
        * widgets are enabled */
-      task->callback    = state->widgets_ready ?
-            task_screenshot_callback : NULL;
-      if (state->widgets_ready && !savestate)
+      if (state->flags & SS_TASK_FLAG_WIDGETS_READY)
+         task->callback    = task_screenshot_callback;
+
+      if ((state->flags & SS_TASK_FLAG_WIDGETS_READY) && !savestate)
          task_free_title(task);
       else
 #endif
@@ -404,8 +411,7 @@ static bool take_screenshot_viewport(
       const char *screenshot_dir,
       const char *name_base,
       bool savestate,
-      bool is_idle,
-      bool is_paused,
+      uint32_t runloop_flags,
       bool fullpath,
       bool use_thread,
       unsigned pixel_format_type)
@@ -427,7 +433,7 @@ static bool take_screenshot_viewport(
    if (!(buffer = (uint8_t*)malloc(vp.width * vp.height * 3)))
       return false;
 
-   if (!video_driver_read_viewport(buffer, is_idle))
+   if (!video_driver_read_viewport(buffer, runloop_flags & RUNLOOP_FLAG_IDLE))
       goto error;
 
    /* Data read from viewport is in bottom-up order, suitable for BMP. */
@@ -435,7 +441,7 @@ static bool take_screenshot_viewport(
             name_base,
             buffer, vp.width, vp.height,
             vp.width * 3, true, buffer,
-            savestate, is_idle, is_paused, fullpath, use_thread,
+            savestate, runloop_flags, fullpath, use_thread,
             pixel_format_type))
       goto error;
 
@@ -448,7 +454,7 @@ error:
 
 static bool take_screenshot_raw(const char *screenshot_dir,
       const char *name_base, void *userbuf,
-      bool savestate, bool is_idle, bool is_paused, bool fullpath, bool use_thread,
+      bool savestate, uint32_t runloop_flags, bool fullpath, bool use_thread,
       unsigned pixel_format_type)
 {
    size_t pitch;
@@ -467,8 +473,7 @@ static bool take_screenshot_raw(const char *screenshot_dir,
             false,
             userbuf,
             savestate,
-            is_idle,
-            is_paused,
+            runloop_flags,
             fullpath,
             use_thread,
             pixel_format_type);
@@ -478,8 +483,7 @@ static bool take_screenshot_choice(
       const char *screenshot_dir,
       const char *name_base,
       bool savestate,
-      bool is_paused,
-      bool is_idle,
+      uint32_t runloop_flags,
       bool has_valid_framebuffer,
       bool fullpath,
       bool use_thread,
@@ -492,16 +496,16 @@ static bool take_screenshot_choice(
    {
       /* Avoid taking screenshot of GUI overlays. */
       video_driver_set_texture_enable(false, false);
-      if (!is_idle)
+      if (!(runloop_flags & RUNLOOP_FLAG_IDLE))
          video_driver_cached_frame();
       return take_screenshot_viewport(screenshot_dir,
-            name_base, savestate, is_idle, is_paused, fullpath, use_thread,
+            name_base, savestate, runloop_flags, fullpath, use_thread,
             pixel_format_type);
    }
 
    if (!has_valid_framebuffer)
       return take_screenshot_raw(screenshot_dir,
-            name_base, NULL, savestate, is_idle, is_paused, fullpath, use_thread,
+            name_base, NULL, savestate, runloop_flags, fullpath, use_thread,
             pixel_format_type);
 
    if (supports_read_frame_raw)
@@ -523,7 +527,7 @@ static bool take_screenshot_choice(
       {
          video_driver_set_cached_frame_ptr(frame_data);
          return take_screenshot_raw(screenshot_dir,
-               name_base, frame_data, savestate, is_idle, is_paused, fullpath, use_thread,
+               name_base, frame_data, savestate, runloop_flags, fullpath, use_thread,
                pixel_format_type);
       }
    }
@@ -534,19 +538,20 @@ static bool take_screenshot_choice(
 bool take_screenshot(
       const char *screenshot_dir,
       const char *name_base,
-      bool silence, bool has_valid_framebuffer,
+      bool savestate, bool has_valid_framebuffer,
       bool fullpath, bool use_thread)
 {
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
-   bool is_paused              = false;
-   bool is_idle                = false;
    bool ret                    = false;
+   uint32_t runloop_flags      = runloop_get_flags();
+   settings_t *settings        = config_get_ptr();
+   bool video_gpu_screenshot   = settings->bools.video_gpu_screenshot;
+   bool supports_viewport_read = video_driver_supports_viewport_read();
+   bool prefer_viewport_read   = supports_viewport_read &&
+         video_driver_prefer_viewport_read();
 
-   if (runloop_st)
-   {
-      is_paused                = runloop_st->paused;
-      is_idle                  = runloop_st->idle;
-   }
+   /* Avoid GPU screenshots with savestates */
+   if (supports_viewport_read && video_gpu_screenshot && !savestate)
+      prefer_viewport_read     = true;
 
    /* No way to infer screenshot directory. */
    if (     string_is_empty(screenshot_dir)
@@ -555,15 +560,15 @@ bool take_screenshot(
 
    ret       = take_screenshot_choice(
          screenshot_dir,
-         name_base, silence, is_paused, is_idle,
+         name_base, savestate, runloop_flags,
          has_valid_framebuffer, fullpath, use_thread,
-         video_driver_supports_viewport_read() &&
-         video_driver_prefer_viewport_read(),
+         prefer_viewport_read,
          video_driver_supports_read_frame_raw(),
          video_driver_get_pixel_format()
          );
 
-   if (is_paused && !is_idle)
+   if (       (runloop_flags & RUNLOOP_FLAG_PAUSED)
+         && (!(runloop_flags & RUNLOOP_FLAG_IDLE)))
          video_driver_cached_frame();
 
    return ret;

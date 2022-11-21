@@ -570,13 +570,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
    "CPU funksjoner"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "CPU kjerner:"
-   )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CPU_CORES,
-   "Antall kjerner som CPU-en har."
+   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
+   "CPU arkitektur"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -1018,7 +1014,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
-   "Endre innstillinger knyttet til video, lyd og inndata latens."
+   "Endre innstillinger knyttet til video-, lyd- og latensinndata."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
@@ -1148,6 +1144,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
    "Endre standardmapper hvor filer er plassert."
    )
+
+/* Core option category placeholders for icons */
 
 #ifdef HAVE_MIST
 #endif
@@ -1303,7 +1301,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-   "Svart rammeinnsetting"
+   "Sett inn en svart ramme"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
@@ -1829,13 +1827,21 @@ MSG_HASH(
 /* Settings > Input > Menu Controls */
 
 
-
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-   "Avslutt RetroArch"
+   "Avslutt"
    )
+
+
+
+
+
+
+
+
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
    "Neste overlegg"
@@ -1844,6 +1850,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_OVERLAY_NEXT,
    "Bytter til neste tilgjengelige oppsett for det nåværende aktive overlegget på skjermen."
    )
+
+
 
 /* Settings > Input > Port # Controls */
 

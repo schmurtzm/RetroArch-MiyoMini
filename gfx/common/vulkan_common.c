@@ -80,43 +80,19 @@ static bool trigger_spurious_error(void)
 
 #ifdef VULKAN_DEBUG
 static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
-      VkDebugReportFlagsEXT flags,
-      VkDebugReportObjectTypeEXT objectType,
-      uint64_t object,
-      size_t location,
-      int32_t messageCode,
-      const char *pLayerPrefix,
-      const char *pMessage,
+      VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+      VkDebugUtilsMessageTypeFlagsEXT messageType,
+      const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
       void *pUserData)
 {
-   (void)objectType;
-   (void)object;
-   (void)location;
-   (void)messageCode;
+   const char *name;
    (void)pUserData;
 
-   if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
+   if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT &&
+         messageType == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
    {
-      RARCH_ERR("[Vulkan]: Error: %s: %s\n",
-            pLayerPrefix, pMessage);
+      RARCH_ERR("[Vulkan]: Validation Error: %s\n", pCallbackData->pMessage);
    }
-#if 0
-   else if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
-   {
-      RARCH_WARN("[Vulkan]: Warning: %s: %s\n",
-            pLayerPrefix, pMessage);
-   }
-   else if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
-   {
-      RARCH_LOG("[Vulkan]: Performance warning: %s: %s\n",
-            pLayerPrefix, pMessage);
-   }
-   else
-   {
-      RARCH_LOG("[Vulkan]: Information: %s: %s\n",
-            pLayerPrefix, pMessage);
-   }
-#endif
 
    return VK_FALSE;
 }
@@ -128,7 +104,7 @@ static void vulkan_emulated_mailbox_deinit(
    if (mailbox->thread)
    {
       slock_lock(mailbox->lock);
-      mailbox->dead = true;
+      mailbox->flags |= VK_MAILBOX_FLAG_DEAD;
       scond_signal(mailbox->cond);
       slock_unlock(mailbox->lock);
       sthread_join(mailbox->thread);
@@ -150,20 +126,20 @@ static VkResult vulkan_emulated_mailbox_acquire_next_image(
 
    slock_lock(mailbox->lock);
 
-   if (!mailbox->has_pending_request)
+   if (!(mailbox->flags & VK_MAILBOX_FLAG_HAS_PENDING_REQUEST))
    {
-      mailbox->request_acquire     = true;
+      mailbox->flags |= VK_MAILBOX_FLAG_REQUEST_ACQUIRE;
       scond_signal(mailbox->cond);
    }
 
-   mailbox->has_pending_request    = true;
+   mailbox->flags |= VK_MAILBOX_FLAG_HAS_PENDING_REQUEST;
 
-   if (mailbox->acquired)
+   if (mailbox->flags & VK_MAILBOX_FLAG_ACQUIRED)
    {
       res                          = mailbox->result;
       *index                       = mailbox->index;
-      mailbox->has_pending_request = false;
-      mailbox->acquired            = false;
+      mailbox->flags              &= ~(VK_MAILBOX_FLAG_HAS_PENDING_REQUEST
+                                     | VK_MAILBOX_FLAG_ACQUIRED);
    }
 
    slock_unlock(mailbox->lock);
@@ -178,21 +154,21 @@ static VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
 
    slock_lock(mailbox->lock);
 
-   if (!mailbox->has_pending_request)
+   if (!(mailbox->flags & VK_MAILBOX_FLAG_HAS_PENDING_REQUEST))
    {
-      mailbox->request_acquire  = true;
+      mailbox->flags |= VK_MAILBOX_FLAG_REQUEST_ACQUIRE;
       scond_signal(mailbox->cond);
    }
 
-   mailbox->has_pending_request = true;
+   mailbox->flags |= VK_MAILBOX_FLAG_HAS_PENDING_REQUEST;
 
-   while (!mailbox->acquired)
+   while (!(mailbox->flags & VK_MAILBOX_FLAG_ACQUIRED))
       scond_wait(mailbox->cond, mailbox->lock);
 
    if ((res = mailbox->result) == VK_SUCCESS)
       *index                    = mailbox->index;
-   mailbox->has_pending_request = false;
-   mailbox->acquired            = false;
+   mailbox->flags              &= ~(VK_MAILBOX_FLAG_HAS_PENDING_REQUEST
+                                  | VK_MAILBOX_FLAG_ACQUIRED);
 
    slock_unlock(mailbox->lock);
    return res;
@@ -217,16 +193,17 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
    for (;;)
    {
       slock_lock(mailbox->lock);
-      while (!mailbox->dead && !mailbox->request_acquire)
+      while (   !(mailbox->flags & VK_MAILBOX_FLAG_DEAD) 
+             && !(mailbox->flags & VK_MAILBOX_FLAG_REQUEST_ACQUIRE))
          scond_wait(mailbox->cond, mailbox->lock);
 
-      if (mailbox->dead)
+      if (mailbox->flags & VK_MAILBOX_FLAG_DEAD)
       {
          slock_unlock(mailbox->lock);
          break;
       }
 
-      mailbox->request_acquire = false;
+      mailbox->flags &= ~VK_MAILBOX_FLAG_REQUEST_ACQUIRE;
       slock_unlock(mailbox->lock);
 
 
@@ -252,7 +229,7 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
          vkResetFences(mailbox->device, 1, &fence);
 
          slock_lock(mailbox->lock);
-         mailbox->acquired = true;
+         mailbox->flags |= VK_MAILBOX_FLAG_ACQUIRED;
          scond_signal(mailbox->cond);
          slock_unlock(mailbox->lock);
       }
@@ -275,10 +252,7 @@ static bool vulkan_emulated_mailbox_init(
    mailbox->swapchain           = swapchain;
    mailbox->index               = 0;
    mailbox->result              = VK_SUCCESS;
-   mailbox->acquired            = false;
-   mailbox->request_acquire     = false;
-   mailbox->dead                = false;
-   mailbox->has_pending_request = false;
+   mailbox->flags               = 0;
 
    if (!(mailbox->cond      = scond_new()))
       return false;
@@ -382,6 +356,40 @@ static unsigned vulkan_num_miplevels(unsigned width, unsigned height)
    return levels;
 }
 
+static void vulkan_debug_mark_object(VkDevice device,
+      VkObjectType object_type, uint64_t object_handle, const char *name, unsigned count)
+{
+   if (vkSetDebugUtilsObjectNameEXT)
+   {
+      char merged_name[1024];
+      snprintf(merged_name, sizeof(merged_name), "%s (%u)", name, count);
+
+      VkDebugUtilsObjectNameInfoEXT info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+      info.objectType = object_type;
+      info.objectHandle = object_handle;
+      info.pObjectName = merged_name;
+      vkSetDebugUtilsObjectNameEXT(device, &info);
+   }
+}
+
+void vulkan_debug_mark_buffer(VkDevice device, VkBuffer buffer)
+{
+   static unsigned object_count;
+   vulkan_debug_mark_object(device, VK_OBJECT_TYPE_BUFFER, (uint64_t)buffer, "RetroArch buffer", ++object_count);
+}
+
+void vulkan_debug_mark_image(VkDevice device, VkImage image)
+{
+   static unsigned object_count;
+   vulkan_debug_mark_object(device, VK_OBJECT_TYPE_IMAGE, (uint64_t)image, "RetroArch image", ++object_count);
+}
+
+void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory)
+{
+   static unsigned object_count;
+   vulkan_debug_mark_object(device, VK_OBJECT_TYPE_DEVICE_MEMORY, (uint64_t)memory, "RetroArch memory", ++object_count);
+}
+
 struct vk_texture vulkan_create_texture(vk_t *vk,
       struct vk_texture *old,
       unsigned width, unsigned height,
@@ -442,7 +450,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
           * static textures, samplers can be used to enable it dynamically.
           */
          info.mipLevels     = vulkan_num_miplevels(width, height);
-         tex.mipmap         = true;
+         tex.flags         |= VK_TEX_FLAG_MIPMAP;
          retro_assert(initial && "Static textures must have initial data.\n");
          info.tiling        = VK_IMAGE_TILING_OPTIMAL;
          info.usage         = VK_IMAGE_USAGE_SAMPLED_BIT |
@@ -483,6 +491,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    if (type != VULKAN_TEXTURE_STAGING && type != VULKAN_TEXTURE_READBACK)
    {
       vkCreateImage(device, &info, NULL, &tex.image);
+      vulkan_debug_mark_image(device, tex.image);
 #if 0
       vulkan_track_alloc(tex.image);
 #endif
@@ -493,6 +502,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       /* Linear staging textures are not guaranteed to be supported,
        * use buffers instead. */
       vkCreateBuffer(device, &buffer_info, NULL, &tex.buffer);
+      vulkan_debug_mark_buffer(device, tex.buffer);
       vkGetBufferMemoryRequirements(device, tex.buffer, &mem_reqs);
    }
    alloc.allocationSize = mem_reqs.size;
@@ -517,9 +527,10 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-         tex.need_manual_cache_management =
-            (vk->context->memory_properties.memoryTypes[alloc.memoryTypeIndex].propertyFlags &
-             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0;
+         if ((vk->context->memory_properties.memoryTypes
+                  [alloc.memoryTypeIndex].propertyFlags &
+                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0)
+            tex.flags |= VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT;
 
          /* If the texture is STREAMED and it's not DEVICE_LOCAL, we expect to hit a slower path,
           * so fallback to copy path. */
@@ -538,6 +549,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 
             buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
             vkCreateBuffer(device, &buffer_info, NULL, &tex.buffer);
+            vulkan_debug_mark_buffer(device, tex.buffer);
             vkGetBufferMemoryRequirements(device, tex.buffer, &mem_reqs);
 
             alloc.allocationSize  = mem_reqs.size;
@@ -586,6 +598,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    else
    {
       vkAllocateMemory(device, &alloc, NULL, &tex.memory);
+      vulkan_debug_mark_memory(device, tex.memory);
       tex.memory_size = alloc.allocationSize;
       tex.memory_type = alloc.memoryTypeIndex;
    }
@@ -667,8 +680,8 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
                for (y = 0; y < tex.height; y++, dst += tex.stride, src += stride)
                   memcpy(dst, src, width * bpp);
 
-               if (  tex.need_manual_cache_management && 
-                     tex.memory != VK_NULL_HANDLE)
+               if (     (tex.flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
+                     && (tex.memory != VK_NULL_HANDLE))
                   VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, tex.memory);
                vkUnmapMemory(device, tex.memory);
             }
@@ -678,7 +691,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
                VkBufferImageCopy region;
                VkCommandBuffer staging;
                enum VkImageLayout layout_fmt = 
-                  tex.mipmap
+                  (tex.flags & VK_TEX_FLAG_MIPMAP)
                   ? VK_IMAGE_LAYOUT_GENERAL
                   : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
                struct vk_texture tmp         = vulkan_create_texture(vk, NULL,
@@ -720,7 +733,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
                vkCmdCopyBufferToImage(staging, tmp.buffer,
                      tex.image, layout_fmt, 1, &region);
 
-               if (tex.mipmap)
+               if (tex.flags & VK_TEX_FLAG_MIPMAP)
                {
                   for (i = 1; i < info.mipLevels; i++)
                   {
@@ -834,9 +847,7 @@ void vulkan_destroy_texture(
       vulkan_track_dealloc(tex->image);
 #endif
    tex->type                          = VULKAN_TEXTURE_STREAMED;
-   tex->default_smooth                = false;
-   tex->need_manual_cache_management  = false;
-   tex->mipmap                        = false;
+   tex->flags                         = 0;
    tex->memory_type                   = 0;
    tex->width                         = 0;
    tex->height                        = 0;
@@ -942,7 +953,7 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
       /* Changing pipeline invalidates dynamic state. */
       vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
 
-      if (vk->tracker.use_scissor)
+      if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
          sci               = vk->tracker.scissor;
       else
       {
@@ -961,7 +972,7 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
    else if (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT)
    {
       VkRect2D sci;
-      if (vk->tracker.use_scissor)
+      if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
          sci               = vk->tracker.scissor;
       else
       {
@@ -1040,7 +1051,7 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
       vk->tracker.pipeline = quad->pipeline;
       /* Changing pipeline invalidates dynamic state. */
       vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
-      if (vk->tracker.use_scissor)
+      if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
          sci               = vk->tracker.scissor;
       else
       {
@@ -1059,7 +1070,7 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
    else if (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT)
    {
       VkRect2D sci;
-      if (vk->tracker.use_scissor)
+      if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
          sci               = vk->tracker.scissor;
       else
       {
@@ -1163,6 +1174,7 @@ struct vk_buffer vulkan_create_buffer(
    info.queueFamilyIndexCount = 0;
    info.pQueueFamilyIndices   = NULL;
    vkCreateBuffer(context->device, &info, NULL, &buffer.buffer);
+   vulkan_debug_mark_buffer(context->device, buffer.buffer);
 
    vkGetBufferMemoryRequirements(context->device, buffer.buffer, &mem_reqs);
 
@@ -1175,6 +1187,7 @@ struct vk_buffer vulkan_create_buffer(
            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
    vkAllocateMemory(context->device, &alloc, NULL, &buffer.memory);
+   vulkan_debug_mark_memory(context->device, buffer.memory);
    vkBindBufferMemory(context->device, buffer.buffer, buffer.memory, 0);
 
    buffer.size                = size;
@@ -1623,21 +1636,24 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 #ifdef VULKAN_EMULATE_MAILBOX
    /* Win32 windowed mode seems to deal just fine with toggling VSync.
     * Fullscreen however ... */
-   vk->emulate_mailbox = vk->fullscreen;
+   if (vk->flags & VK_DATA_FLAG_FULLSCREEN)
+      vk->flags |=  VK_DATA_FLAG_EMULATE_MAILBOX;
+   else
+      vk->flags &= ~VK_DATA_FLAG_EMULATE_MAILBOX;
 #endif
 
    /* If we're emulating mailbox, stick to using fences rather than semaphores.
     * Avoids some really weird driver bugs. */
-   if (!vk->emulate_mailbox)
+   if (!(vk->flags & VK_DATA_FLAG_EMULATE_MAILBOX))
    {
       if (vk->context.gpu_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
       {
-         vk->use_wsi_semaphore = true;
+         vk->flags |= VK_DATA_FLAG_USE_WSI_SEMAPHORE;
          RARCH_LOG("[Vulkan]: Using semaphores for WSI acquire.\n");
       }
       else
       {
-         vk->use_wsi_semaphore = false;
+         vk->flags &= ~VK_DATA_FLAG_USE_WSI_SEMAPHORE;
          RARCH_LOG("[Vulkan]: Using fences for WSI acquire.\n");
       }
    }
@@ -1646,38 +1662,26 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
    {
       char device_str[128];
-      char driver_version[64];
-      char api_version[64];
       char version_str[128];
-      size_t len        = 0;
-      int pos           = 0;
-      driver_version[0] = api_version[0] = '\0';
+      size_t len            = strlcpy(device_str, vk->context.gpu_properties.deviceName, sizeof(device_str));
+      device_str[len  ]     = ' ';
+      device_str[++len]     = '\0';
 
-      len               = strlcpy(device_str, vk->context.gpu_properties.deviceName, sizeof(device_str));
-      device_str[len  ] = ' ';
-      device_str[len+1] = '\0';
+      len                  += snprintf(device_str + len, sizeof(device_str) - len, "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.driverVersion));
+      device_str[len  ]     = '.';
+      device_str[++len]     = '\0';
+      len                  += snprintf(device_str + len, sizeof(device_str) - len, "%u", VK_VERSION_MINOR(vk->context.gpu_properties.driverVersion));
+      device_str[len  ]     = '.';
+      device_str[++len]     = '\0';
+      snprintf(device_str + len, sizeof(device_str) - len, "%u", VK_VERSION_PATCH(vk->context.gpu_properties.driverVersion));
 
-      pos += snprintf(driver_version + pos, sizeof(driver_version) - pos, "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.driverVersion));
-      strlcat(driver_version, ".", sizeof(driver_version));
-      pos++;
-      pos += snprintf(driver_version + pos, sizeof(driver_version) - pos, "%u", VK_VERSION_MINOR(vk->context.gpu_properties.driverVersion));
-      pos++;
-      strlcat(driver_version, ".", sizeof(driver_version));
-      pos += snprintf(driver_version + pos, sizeof(driver_version) - pos, "%u", VK_VERSION_PATCH(vk->context.gpu_properties.driverVersion));
-
-      strlcat(device_str, driver_version, sizeof(device_str));
-
-      pos = 0;
-
-      pos += snprintf(api_version + pos, sizeof(api_version) - pos, "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.apiVersion));
-      strlcat(api_version, ".", sizeof(api_version));
-      pos++;
-      pos += snprintf(api_version + pos, sizeof(api_version) - pos, "%u", VK_VERSION_MINOR(vk->context.gpu_properties.apiVersion));
-      pos++;
-      strlcat(api_version, ".", sizeof(api_version));
-      pos += snprintf(api_version + pos, sizeof(api_version) - pos, "%u", VK_VERSION_PATCH(vk->context.gpu_properties.apiVersion));
-
-      strlcpy(version_str, api_version, sizeof(device_str));
+      len                   = snprintf(version_str      , sizeof(version_str)      , "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.apiVersion));
+      version_str[len  ]    = '.';
+      version_str[++len]    = '\0';
+      len                  += snprintf(version_str + len, sizeof(version_str) - len, "%u", VK_VERSION_MINOR(vk->context.gpu_properties.apiVersion));
+      version_str[len  ]    = '.';
+      version_str[++len]    = '\0';
+      snprintf(version_str + len, sizeof(version_str) - len, "%u", VK_VERSION_PATCH(vk->context.gpu_properties.apiVersion));
 
       video_driver_set_gpu_device_string(device_str);
       video_driver_set_gpu_api_version_string(version_str);
@@ -1799,7 +1803,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       (struct retro_hw_render_context_negotiation_interface_vulkan*)video_driver_get_context_negotiation_interface();
 #ifdef VULKAN_DEBUG
    static const char *instance_layers[] = { "VK_LAYER_KHRONOS_validation" };
-   instance_extensions[ext_count++]     = "VK_EXT_debug_report";
+   instance_extensions[ext_count++]     = "VK_EXT_debug_utils";
 #endif
 
    if (iface && iface->interface_type != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN)
@@ -1935,24 +1939,29 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
 #ifdef VULKAN_DEBUG
    VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
-         vkCreateDebugReportCallbackEXT);
+         vkCreateDebugUtilsMessengerEXT);
    VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
-         vkDebugReportMessageEXT);
+         vkDestroyDebugUtilsMessengerEXT);
    VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
-         vkDestroyDebugReportCallbackEXT);
+         vkSetDebugUtilsObjectNameEXT);
 
    {
-      VkDebugReportCallbackCreateInfoEXT info =
-      { VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT };
-      info.flags =
-         VK_DEBUG_REPORT_ERROR_BIT_EXT |
-         VK_DEBUG_REPORT_WARNING_BIT_EXT |
-         VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
-      info.pfnCallback = vulkan_debug_cb;
+      VkDebugUtilsMessengerCreateInfoEXT info =
+      { VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT };
+      info.messageSeverity =
+         VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
+         VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+         VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
+      info.messageType =
+         VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+         VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+      info.pfnUserCallback = vulkan_debug_cb;
 
       if (vk->context.instance)
-         vkCreateDebugReportCallbackEXT(vk->context.instance, &info, NULL,
+      {
+         vkCreateDebugUtilsMessengerEXT(vk->context.instance, &info, NULL,
                &vk->context.debug_callback);
+      }
    }
    RARCH_LOG("[Vulkan]: Enabling Vulkan debug layers.\n");
 #endif
@@ -1969,6 +1978,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    if (res != VK_SUCCESS)
    {
       RARCH_ERR("Failed to create Vulkan instance (%d).\n", res);
+      RARCH_ERR("If VULKAN_DEBUG=1 is enabled, make sure Vulkan validation layers are installed.\n");
       return false;
    }
 
@@ -2431,7 +2441,7 @@ static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
       vkDestroySwapchainKHR(vk->context.device, vk->swapchain, NULL);
       memset(vk->context.swapchain_images, 0, sizeof(vk->context.swapchain_images));
       vk->swapchain                      = VK_NULL_HANDLE;
-      vk->context.has_acquired_swapchain = false;
+      vk->context.flags                 &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
    }
 
    for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
@@ -2516,6 +2526,7 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       bool destroy_surface)
 {
+   uint32_t video_st_flags = 0;
    if (!vk->context.instance)
       return;
 
@@ -2533,10 +2544,12 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 
 #ifdef VULKAN_DEBUG
    if (vk->context.debug_callback)
-      vkDestroyDebugReportCallbackEXT(vk->context.instance, vk->context.debug_callback, NULL);
+      vkDestroyDebugUtilsMessengerEXT(vk->context.instance, vk->context.debug_callback, NULL);
 #endif
 
-   if (video_driver_is_video_cache_context())
+   video_st_flags = video_driver_get_st_flags();
+
+   if (video_st_flags & VIDEO_FLAG_CACHE_CONTEXT)
    {
       cached_device_vk         = vk->context.device;
       cached_instance_vk       = vk->context.instance;
@@ -2716,14 +2729,14 @@ retry:
          vk->context.current_frame_index     = 0;
          vulkan_acquire_clear_fences(vk);
          vulkan_acquire_wait_fences(vk);
-         vk->context.invalid_swapchain       = true;
+         vk->context.flags                  |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
          return;
       }
    }
 
-   retro_assert(!vk->context.has_acquired_swapchain);
+   retro_assert(!(vk->context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN));
 
-   if (vk->emulating_mailbox)
+   if (vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX)
    {
       /* Non-blocking acquire. If we don't get a swapchain frame right away,
        * just skip rendering to the swapchain this frame, similar to what
@@ -2736,7 +2749,7 @@ retry:
    }
    else
    {
-      if (vk->use_wsi_semaphore)
+      if (vk->flags & VK_DATA_FLAG_USE_WSI_SEMAPHORE)
           semaphore = vulkan_get_wsi_acquire_semaphore(&vk->context);
       else
           vkCreateFence(vk->context.device, &fence_info, NULL, &fence);
@@ -2758,7 +2771,7 @@ retry:
    {
       if (fence != VK_NULL_HANDLE)
          vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
-      vk->context.has_acquired_swapchain = true;
+      vk->context.flags |= VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
 
       if (vk->context.swapchain_acquire_semaphore)
       {
@@ -2775,7 +2788,7 @@ retry:
    }
    else
    {
-      vk->context.has_acquired_swapchain = false;
+      vk->context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
       if (semaphore)
       {
          struct vulkan_context *ctx = &vk->context;
@@ -2821,7 +2834,7 @@ retry:
             if (err == VK_ERROR_SURFACE_LOST_KHR)
                RARCH_ERR("[Vulkan]: Got VK_ERROR_SURFACE_LOST_KHR.\n");
             /* Force driver to reset swapchain image handles. */
-            vk->context.invalid_swapchain = true;
+            vk->context.flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
             vulkan_acquire_clear_fences(vk);
             return;
          }
@@ -2852,8 +2865,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkSwapchainCreateInfoKHR info;
    VkSurfaceTransformFlagBitsKHR pre_transform;
    VkPresentModeKHR swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
-   settings_t                    *settings = config_get_ptr();
    VkCompositeAlphaFlagBitsKHR composite   = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+   settings_t                    *settings = config_get_ptr();
    bool vsync                              = settings->bools.video_vsync;
 
    vkDeviceWaitIdle(vk->context.device);
@@ -2867,21 +2880,23 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
        !surface_properties.currentExtent.height)
       return false;
 
-   if (swap_interval == 0 && vk->emulate_mailbox && vsync)
+   if (     (swap_interval == 0)
+         && (vk->flags & VK_DATA_FLAG_EMULATE_MAILBOX)
+         && vsync)
    {
-      swap_interval          = 1;
-      vk->emulating_mailbox  = true;
+      swap_interval  =  1;
+      vk->flags     |=  VK_DATA_FLAG_EMULATING_MAILBOX;
    }
    else
-      vk->emulating_mailbox  = false;
+      vk->flags     &= ~VK_DATA_FLAG_EMULATING_MAILBOX;
 
-   vk->created_new_swapchain = true;
+   vk->flags        |= VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
 
-   if (vk->swapchain != VK_NULL_HANDLE &&
-         !vk->context.invalid_swapchain &&
-         vk->context.swapchain_width == width &&
-         vk->context.swapchain_height == height &&
-         vk->context.swap_interval == swap_interval)
+   if (       (vk->swapchain != VK_NULL_HANDLE)
+         && (!(vk->context.flags & VK_CTX_FLAG_INVALID_SWAPCHAIN))
+         &&   (vk->context.swapchain_width  == width)
+         &&   (vk->context.swapchain_height == height)
+         &&   (vk->context.swap_interval    == swap_interval))
    {
       /* Do not bother creating a swapchain redundantly. */
 #ifdef VULKAN_DEBUG
@@ -2889,23 +2904,23 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 #endif
       vulkan_create_wait_fences(vk);
 
-      if (     vk->emulating_mailbox 
-            && vk->mailbox.swapchain == VK_NULL_HANDLE)
+      if (     (vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX)
+            && (vk->mailbox.swapchain == VK_NULL_HANDLE))
       {
          vulkan_emulated_mailbox_init(
                &vk->mailbox, vk->context.device, vk->swapchain);
-         vk->created_new_swapchain = false;
+         vk->flags                &= ~VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
          return true;
       }
       else if (
-               !vk->emulating_mailbox 
-            &&  vk->mailbox.swapchain != VK_NULL_HANDLE)
+               (!(vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX))
+            &&   (vk->mailbox.swapchain != VK_NULL_HANDLE))
       {
          VkResult res = VK_SUCCESS;
          /* We are tearing down, and entering a state 
           * where we are supposed to have
           * acquired an image, so block until we have acquired. */
-         if (!vk->context.has_acquired_swapchain)
+         if (! (vk->context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
             if (vk->mailbox.swapchain != VK_NULL_HANDLE)
                res = vulkan_emulated_mailbox_acquire_next_image_blocking(
                      &vk->mailbox,
@@ -2915,17 +2930,17 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
          if (res == VK_SUCCESS)
          {
-            vk->context.has_acquired_swapchain = true;
-            vk->created_new_swapchain          = false;
+            vk->context.flags |=  VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
+            vk->flags         &= ~VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
             return true;
          }
 
          /* We failed for some reason, so create a new swapchain. */
-         vk->context.has_acquired_swapchain    = false;
+         vk->context.flags    &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
       }
       else
       {
-         vk->created_new_swapchain             = false;
+         vk->flags &= ~VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
          return true;
       }
    }
@@ -3000,7 +3015,10 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       }  
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-      vk->context.hdr_enable          = settings->bools.video_hdr_enable;
+      if (settings->bools.video_hdr_enable)
+         vk->context.flags |=  VK_CTX_FLAG_HDR_ENABLE;
+      else
+         vk->context.flags &= ~VK_CTX_FLAG_HDR_ENABLE;
 
       video_driver_unset_hdr_support();
 
@@ -3013,10 +3031,11 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          }
       }
 
-      if (!vk->context.hdr_enable || format.format == VK_FORMAT_UNDEFINED)
-         vk->context.hdr_enable = false;
+      if (     (!(vk->context.flags & VK_CTX_FLAG_HDR_ENABLE))
+            || (format.format == VK_FORMAT_UNDEFINED))
+         vk->context.flags &= ~VK_CTX_FLAG_HDR_ENABLE;
 
-      if (!vk->context.hdr_enable)
+      if (!(vk->context.flags & VK_CTX_FLAG_HDR_ENABLE))
 #endif /* VULKAN_HDR_SWAPCHAIN */
       {
          for (i = 0; i < format_count; i++)
@@ -3165,22 +3184,22 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    {
       case VK_FORMAT_B8G8R8A8_SRGB:
          vk->context.swapchain_format  = VK_FORMAT_B8G8R8A8_UNORM;
-         vk->context.swapchain_is_srgb = true;
+         vk->context.flags            |= VK_CTX_FLAG_SWAPCHAIN_IS_SRGB;
          break;
 
       case VK_FORMAT_R8G8B8A8_SRGB:
          vk->context.swapchain_format  = VK_FORMAT_R8G8B8A8_UNORM;
-         vk->context.swapchain_is_srgb = true;
+         vk->context.flags            |= VK_CTX_FLAG_SWAPCHAIN_IS_SRGB;
          break;
 
       case VK_FORMAT_R8G8B8_SRGB:
          vk->context.swapchain_format  = VK_FORMAT_R8G8B8_UNORM;
-         vk->context.swapchain_is_srgb = true;
+         vk->context.flags            |= VK_CTX_FLAG_SWAPCHAIN_IS_SRGB;
          break;
 
       case VK_FORMAT_B8G8R8_SRGB:
          vk->context.swapchain_format  = VK_FORMAT_B8G8R8_UNORM;
-         vk->context.swapchain_is_srgb = true;
+         vk->context.flags            |= VK_CTX_FLAG_SWAPCHAIN_IS_SRGB;
          break;
 
       default:
@@ -3198,11 +3217,11 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
             vk->context.num_swapchain_images);
 
    /* Force driver to reset swapchain image handles. */
-   vk->context.invalid_swapchain      = true;
-   vk->context.has_acquired_swapchain = false;
+   vk->context.flags                 |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
+   vk->context.flags                 &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
    vulkan_create_wait_fences(vk);
 
-   if (vk->emulating_mailbox)
+   if (vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX)
       vulkan_emulated_mailbox_init(&vk->mailbox, vk->context.device, vk->swapchain);
 
    return true;

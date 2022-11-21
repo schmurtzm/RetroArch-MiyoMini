@@ -25,11 +25,11 @@
 #include <retro_endianness.h>
 #include "../input_driver.h"
 
-/* Wii have PID/VID already swapped by USB_GetDescriptors from libogc */
-#ifdef GEKKO
-#define SWAP_IF_BIG(val) (val)
+/* Gekko (NGC/Wii) has PID/VID already swapped by USB_GetDescriptors from libogc, so skip bigendian byteswap */
+#if defined(MSB_FIRST) && !defined(GEKKO)
+#define SWAP_IF_BIG(val) ((((val) & 0x00ff) << 8) | (((val) & 0xff00) >> 8))
 #else
-#define SWAP_IF_BIG(val) swap_if_big16(val)
+#define SWAP_IF_BIG(val) (val)
 #endif
 
 #define VID_NONE          0x0000
@@ -41,11 +41,14 @@
 #define VID_SNES_CLONE    SWAP_IF_BIG(0x081f)
 #define VID_RETRODE       SWAP_IF_BIG(0x0403)
 #define VID_HORI_1        SWAP_IF_BIG(0x0f0d)
+#define VID_KADE          SWAP_IF_BIG(0x10c4)
+#define VID_DRAGONRISE    SWAP_IF_BIG(0x0079)
 
 #define PID_NONE          0x0000
 #define PID_NINTENDO_PRO  SWAP_IF_BIG(0x0330)
 #define PID_SONY_DS3      SWAP_IF_BIG(0x0268)
 #define PID_SONY_DS4      SWAP_IF_BIG(0x05c4)
+#define PID_SONY_DS4_R2   SWAP_IF_BIG(0x09cc)
 #define PID_DS3_CLONE     SWAP_IF_BIG(0x20d6)
 #define PID_SNES_CLONE    SWAP_IF_BIG(0xe401)
 #define PID_MICRONTEK_NES SWAP_IF_BIG(0x0011)
@@ -54,6 +57,8 @@
 #define PID_PCS_PSX2PS3   SWAP_IF_BIG(0x0003)
 #define PID_RETRODE       SWAP_IF_BIG(0x97c1)
 #define PID_HORI_MINI_WIRED_PS4 SWAP_IF_BIG(0x00ee)
+#define PID_KADE          SWAP_IF_BIG(0x82c0)
+#define PID_DRAGONRISE    SWAP_IF_BIG(0x0006)
 
 struct joypad_connection
 {
@@ -110,6 +115,8 @@ extern pad_connection_interface_t pad_connection_ps2adapter;
 extern pad_connection_interface_t pad_connection_psxadapter;
 extern pad_connection_interface_t pad_connection_retrode;
 extern pad_connection_interface_t pad_connection_ps4_hori_mini;
+extern pad_connection_interface_t pad_connection_kade;
+extern pad_connection_interface_t pad_connection_dragonrise;
 
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    const char* name, uint16_t vid, uint16_t pid,

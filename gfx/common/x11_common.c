@@ -36,10 +36,13 @@
 
 #include "x11_common.h"
 
+#ifdef HAVE_XF86VM
 #include <X11/extensions/xf86vmode.h>
+#endif
 
 #include <encodings/utf.h>
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_DBUS
 #include "dbus_common.h"
@@ -67,7 +70,9 @@ Window   g_x11_win                          = None;
 Colormap g_x11_cmap;
 
 /* TODO/FIXME - static globals */
+#ifdef HAVE_XF86VM
 static XF86VidModeModeInfo desktop_mode;
+#endif
 static bool xdg_screensaver_available       = true;
 static bool g_x11_has_focus                 = false;
 static bool g_x11_true_full                 = false;
@@ -248,6 +253,7 @@ void x11_suspend_screensaver(Window wnd, bool enable)
           xdg_screensaver_inhibit(wnd);
 }
 
+#ifdef HAVE_XF86VM
 float x11_get_refresh_rate(void *data)
 {
    XWindowAttributes attr;
@@ -255,7 +261,6 @@ float x11_get_refresh_rate(void *data)
    Screen *screen;
    int screenid;
    int dotclock;
-   float refresh;
 
    if (!g_x11_dpy || g_x11_win == None)
       return 0.0f;
@@ -272,9 +277,7 @@ float x11_get_refresh_rate(void *data)
    if (modeline.flags & V_DBLSCAN)
       dotclock /= 2;
 
-   refresh = (float)dotclock * 1000.0f / modeline.htotal / modeline.vtotal;
-
-   return refresh;
+   return (float)dotclock * 1000.0f / modeline.htotal / modeline.vtotal;
 }
 
 static bool get_video_mode(
@@ -353,6 +356,7 @@ void x11_exit_fullscreen(Display *dpy)
    XF86VidModeSwitchToMode(dpy, DefaultScreen(dpy), &desktop_mode);
    XF86VidModeSetViewPort(dpy, DefaultScreen(dpy), 0, 0);
 }
+#endif
 
 static void x11_init_keyboard_lut(void)
 {
@@ -407,24 +411,22 @@ static void x11_destroy_input_context(XIM *xim, XIC *xic)
 }
 
 
-static bool x11_create_input_context(Display *dpy, Window win, XIM *xim, XIC *xic)
+static bool x11_create_input_context(Display *dpy,
+      Window win, XIM *xim, XIC *xic)
 {
    x11_destroy_input_context(xim, xic);
    x11_init_keyboard_lut();
 
    g_x11_has_focus = true;
-   *xim            = XOpenIM(dpy, NULL, NULL, NULL);
-
-   if (!*xim)
+   
+   if (!(*xim = XOpenIM(dpy, NULL, NULL, NULL)))
    {
       RARCH_ERR("[X11]: Failed to open input method.\n");
       return false;
    }
 
-   *xic = XCreateIC(*xim, XNInputStyle,
-         XIMPreeditNothing | XIMStatusNothing, XNClientWindow, win, NULL);
-
-   if (!*xic)
+   if (!(*xic = XCreateIC(*xim, XNInputStyle,
+         XIMPreeditNothing | XIMStatusNothing, XNClientWindow, win, NULL)))
    {
       RARCH_ERR("[X11]: Failed to create input context.\n");
       return false;
@@ -437,33 +439,36 @@ static bool x11_create_input_context(Display *dpy, Window win, XIM *xim, XIC *xi
 bool x11_get_metrics(void *data,
       enum display_metric_types type, float *value)
 {
-   unsigned     screen_no  = 0;
-   Display           *dpy  = (Display*)XOpenDisplay(NULL);
-   int pixels_x            = DisplayWidth(dpy, screen_no);
-   int pixels_y            = DisplayHeight(dpy, screen_no);
-   int physical_width      = DisplayWidthMM(dpy, screen_no);
-   int physical_height     = DisplayHeightMM(dpy, screen_no);
-
-   (void)pixels_y;
-
-   XCloseDisplay(dpy);
+   unsigned screen_no      = 0;
+   Display *dpy            = NULL;
 
    switch (type)
    {
       case DISPLAY_METRIC_PIXEL_WIDTH:
-         *value = (float)pixels_x;
+         dpy    = (Display*)XOpenDisplay(NULL);
+         *value = (float)DisplayWidth(dpy, screen_no);
+         XCloseDisplay(dpy);
          break;
       case DISPLAY_METRIC_PIXEL_HEIGHT:
-         *value = (float)pixels_y;
+         dpy    = (Display*)XOpenDisplay(NULL);
+         *value = (float)DisplayHeight(dpy, screen_no);
+         XCloseDisplay(dpy);
          break;
       case DISPLAY_METRIC_MM_WIDTH:
-         *value = (float)physical_width;
+         dpy    = (Display*)XOpenDisplay(NULL);
+         *value = (float)DisplayWidthMM(dpy, screen_no);
+         XCloseDisplay(dpy);
          break;
       case DISPLAY_METRIC_MM_HEIGHT:
-         *value = (float)physical_height;
+         dpy    = (Display*)XOpenDisplay(NULL);
+         *value = (float)DisplayHeightMM(dpy, screen_no);
+         XCloseDisplay(dpy);
          break;
       case DISPLAY_METRIC_DPI:
-         *value = ((((float)pixels_x) * 25.4) / ((float)physical_width));
+         dpy    = (Display*)XOpenDisplay(NULL);
+         *value = ((((float)DisplayWidth  (dpy, screen_no)) * 25.4) 
+               /  (  (float)DisplayWidthMM(dpy, screen_no)));
+         XCloseDisplay(dpy);
          break;
       case DISPLAY_METRIC_NONE:
       default:
@@ -494,7 +499,8 @@ static enum retro_key x11_translate_keysym_to_rk(unsigned sym)
    return RETROK_UNKNOWN;
 }
 
-static void x11_handle_key_event(unsigned keycode, XEvent *event, XIC ic, bool filter)
+static void x11_handle_key_event(unsigned keycode, XEvent *event,
+      XIC ic, bool filter)
 {
    int i;
    Status status;
@@ -534,16 +540,19 @@ static void x11_handle_key_event(unsigned keycode, XEvent *event, XIC ic, bool f
 #endif
       }
       else
-         keysym = XLookupKeysym(&event->xkey, (state & ShiftMask) || (state & LockMask));
+         keysym = XLookupKeysym(&event->xkey,
+               (state & ShiftMask) || (state & LockMask));
    }
 
-   /* We can't feed uppercase letters to the keycode translator. Seems like a bad idea
-    * to feed it keysyms anyway, so here is a little hack... */
+   /* We can't feed uppercase letters to the keycode translator. 
+    * Seems like a bad idea to feed it keysyms anyway, so here 
+    * is a little hack...
+    **/
    if (keysym >= XK_A && keysym <= XK_Z)
        keysym += XK_z - XK_Z;
 
-   /* Get the real keycode,
-      that correctly ignores international layouts as windows code does. */
+   /* Get the real keycode, that correctly ignores international layouts
+    * as windows code does. */
    key     = x11_translate_keysym_to_rk(keycode);
 
    if (state & ShiftMask)
@@ -585,7 +594,7 @@ bool x11_alive(void *data)
       switch (event.type)
       {
          case ClientMessage:
-            if (event.xclient.window == g_x11_win &&
+            if (        event.xclient.window    == g_x11_win &&
                   (Atom)event.xclient.data.l[0] == g_x11_quit_atom)
                frontend_driver_set_signal_handler_state(1);
             break;
@@ -647,19 +656,18 @@ bool x11_alive(void *data)
             break;
 
          case KeyRelease:
-            /*  When you receive a key release and the next event is a key press
-               of the same key combination, then it's auto-repeat and the
-               key wasn't actually released. */
+            /*  When you receive a key release and the next event 
+             * is a key press of the same key combination,
+             * then it's auto-repeat and the key wasn't 
+             * actually released. */
             if(XEventsQueued(g_x11_dpy, QueuedAfterReading))
             {
                XEvent next_event;
                XPeekEvent(g_x11_dpy, &next_event);
-               if (next_event.type == KeyPress &&
-                   next_event.xkey.time == event.xkey.time &&
-                   next_event.xkey.keycode == event.xkey.keycode)
-               {
+               if (   next_event.type         == KeyPress
+                   && next_event.xkey.time    == event.xkey.time
+                   && next_event.xkey.keycode == event.xkey.keycode)
                   break; /* Key wasn't actually released */
-               }
             }
          case KeyPress:
             if (event.xkey.window == g_x11_win)
@@ -716,7 +724,7 @@ void x11_get_video_size(void *data, unsigned *width, unsigned *height)
       }
       else
       {
-      	 XWindowAttributes target;
+         XWindowAttributes target;
          XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
 
          *width  = target.width;
@@ -747,11 +755,8 @@ bool x11_connect(void)
    /* Keep one g_x11_dpy alive the entire process lifetime.
     * This is necessary for nVidia's EGL implementation for now. */
    if (!g_x11_dpy)
-   {
-      g_x11_dpy = XOpenDisplay(NULL);
-      if (!g_x11_dpy)
+      if (!(g_x11_dpy = XOpenDisplay(NULL)))
          return false;
-   }
 
 #ifdef HAVE_DBUS
    dbus_ensure_connection();
@@ -764,13 +769,13 @@ bool x11_connect(void)
 
 void x11_update_title(void *data)
 {
+   size_t len;
    char title[128];
    title[0] = '\0';
-   video_driver_get_window_title(title, sizeof(title));
+   len      = video_driver_get_window_title(title, sizeof(title));
    if (title[0])
       XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
-            8, PropModeReplace, (const unsigned char*)title,
-            strlen(title));
+            8, PropModeReplace, (const unsigned char*)title, len);
 }
 
 bool x11_input_ctx_new(bool true_full)

@@ -145,6 +145,8 @@ MSG_HASH(
 /* Settings */
 
 
+/* Core option category placeholders for icons */
+
 #ifdef HAVE_MIST
 #endif
 
@@ -513,6 +515,14 @@ MSG_HASH(
 /* Settings > Input > Menu Controls */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
+   "If enabled, Info button presses will be ignored."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
+   "If enabled, Search button presses will be ignored."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
    "Menu Swap Okay and Cancel Buttons"
    )
@@ -521,8 +531,27 @@ MSG_HASH(
    "Swap buttons for Okay/Cancel. When disabled, the Japanese button orientation is on by default, when this is enabled, it is the western orientation instead."
    )
 
-
 /* Settings > Input > Hotkeys */
+
+
+
+
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
+   "If virtual disc tray is closed, this opens it and removes the loaded disc. Otherwise, it inserts the currently selected disc and closes the tray."
+   )
+
+
+
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+   "Full-screen (Toggle)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+   "Switches between full-screen and windowed display modes."
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
@@ -532,26 +561,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
    "Toggles sync to exact content frame-rate on/off."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-   "Full-screen (Toggle)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-   "Switches between full-screen and windowed display modes."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
-   "Frame-advance"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_FRAMEADVANCE,
-   "When content is paused, the assigned key advances it by one frame."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
-   "Show Net-play Ping (Toggle)"
-   )
+
+
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
    "Switches the ping counter for the current net-play room on/off."
@@ -588,14 +599,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
    "Toggle between fading and static net-play chat messages."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
-   "When assigned, the 'Hotkey Enable' key must be pressed (and held) before any other hotkeys are recognised. Allows controller buttons to be mapped to hotkey functions without affecting normal input."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
-   "If virtual disc tray is closed, this opens it and removes the loaded disc. Otherwise, it inserts the currently selected disc and closes the tray."
-   )
+
 
 /* Settings > Input > Port # Controls */
 
@@ -950,6 +954,10 @@ MSG_HASH(
    "Game specific leader-boards. Has no effect if 'Hardcore Mode' is disabled."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
+   "Periodically send contextual game information to the RetroAchievements website. Has no effect if 'Hardcore Mode' is enabled."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
    "Display badges in the Achievements List."
    )
@@ -1225,6 +1233,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ARTSTYLE,
    "By Art-style"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_NEW_VIEW,
+   "Enter name of the new view"
    )
 
 /* Playlist > Playlist Item */
@@ -2100,6 +2112,38 @@ MSG_HASH(
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_DEFAULT,
    "Tap the Touch Screen to go\nto the RetroArch menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
+   "Display bottom menu font. Enable to display button descriptions on the bottom screen. This excludes the save-state date."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
+   "Font Colour Red"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
+   "Adjust bottom screen font red colour."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
+   "Font Colour Green"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
+   "Adjust bottom screen font green colour."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
+   "Font Colour Blue"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
+   "Adjust bottom screen font blue colour."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
+   "Font Colour Opacity"
    )
 #endif
 #ifdef HAVE_QT

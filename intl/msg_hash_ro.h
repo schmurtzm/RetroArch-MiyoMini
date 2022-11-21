@@ -53,6 +53,8 @@
 /* Settings */
 
 
+/* Core option category placeholders for icons */
+
 #ifdef HAVE_MIST
 #endif
 
@@ -125,8 +127,18 @@
 /* Settings > Input > Menu Controls */
 
 
-
 /* Settings > Input > Hotkeys */
+
+
+
+
+
+
+
+
+
+
+
 
 
 /* Settings > Input > Port # Controls */

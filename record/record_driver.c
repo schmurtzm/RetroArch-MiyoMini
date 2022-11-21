@@ -153,9 +153,10 @@ static bool record_driver_init_first(
 
    for (i = 0; record_drivers[i]; i++)
    {
-      void *handle = record_drivers[i]->init(params);
-
-      if (!handle)
+      void *handle = NULL;
+      if (!record_drivers[i]->init)
+         continue;
+      if (!(handle = record_drivers[i]->init(params)))
          continue;
 
       *backend = record_drivers[i];
@@ -391,7 +392,7 @@ bool recording_init(void)
 
          params.pix_fmt      = FFEMU_PIX_RGB565;
 
-         if (video_st->state_out_rgb32)
+         if (video_st->flags & VIDEO_FLAG_STATE_OUT_RGB32)
             params.pix_fmt = FFEMU_PIX_ARGB8888;
 
          rarch_softfilter_get_max_output_size(

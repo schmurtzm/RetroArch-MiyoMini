@@ -42,8 +42,8 @@ float cocoa_screen_get_backing_scale_factor(void);
 
 static bool apple_key_state[MAX_KEYS];
 
-// Send keyboard inputs directly using RETROK_* codes
-// Used by the iOS custom keyboard implementation
+/* Send keyboard inputs directly using RETROK_* codes
+ * Used by the iOS custom keyboard implementation */
 void apple_direct_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device)
 {
@@ -424,8 +424,10 @@ static int16_t cocoa_input_state(
          if (binds[port][id].valid)
          {
             if (id < RARCH_BIND_LIST_END)
-               if (apple_key_state[rarch_keysym_lut[binds[port][id].key]])
-                  return 1;
+               if (!keyboard_mapping_blocked || (id == RARCH_GAME_FOCUS_TOGGLE))
+                  if (apple_key_state[rarch_keysym_lut[binds[port][id].key]])
+                     return 1;
+
          }
          break;
       case RETRO_DEVICE_ANALOG:
@@ -448,7 +450,16 @@ static int16_t cocoa_input_state(
 #endif
                   }
 #ifdef IOS
-                    val = apple->mouse_rel_x;
+#ifdef HAVE_IOS_TOUCHMOUSE
+                  if (apple->window_pos_x > 0) {
+                     val = apple->window_pos_x - apple->mouse_x_last;
+                     apple->mouse_x_last = apple->window_pos_x;
+                  } else {
+                     val = apple->mouse_rel_x;
+                  }
+#else
+                  val = apple->mouse_rel_x;
+#endif
 #else
                   val = apple->window_pos_x - apple->mouse_x_last;
                   apple->mouse_x_last = apple->window_pos_x;
@@ -464,7 +475,16 @@ static int16_t cocoa_input_state(
 #endif
                   }
 #ifdef IOS
-                    val = apple->mouse_rel_y;
+#ifdef HAVE_IOS_TOUCHMOUSE
+                  if (apple->window_pos_y > 0) {
+                     val = apple->window_pos_y - apple->mouse_y_last;
+                     apple->mouse_y_last = apple->window_pos_y;
+                  } else {
+                     val = apple->mouse_rel_y;
+                  }
+#else
+                  val = apple->mouse_rel_y;
+#endif
 #else
                   val = apple->window_pos_y - apple->mouse_y_last;
                   apple->mouse_y_last = apple->window_pos_y;
@@ -544,11 +564,11 @@ static void cocoa_input_free(void *data)
 static uint64_t cocoa_input_get_capabilities(void *data)
 {
    return
-      (1 << RETRO_DEVICE_JOYPAD)   |
-      (1 << RETRO_DEVICE_MOUSE)    |
-      (1 << RETRO_DEVICE_KEYBOARD) |
-      (1 << RETRO_DEVICE_POINTER)  |
-      (1 << RETRO_DEVICE_ANALOG);
+        (1 << RETRO_DEVICE_JOYPAD)
+      | (1 << RETRO_DEVICE_MOUSE)
+      | (1 << RETRO_DEVICE_KEYBOARD)
+      | (1 << RETRO_DEVICE_POINTER)
+      | (1 << RETRO_DEVICE_ANALOG);
 }
 
 input_driver_t input_cocoa = {
@@ -561,5 +581,6 @@ input_driver_t input_cocoa = {
    cocoa_input_get_capabilities,
    "cocoa",
    NULL,                         /* grab_mouse */
+   NULL,
    NULL
 };

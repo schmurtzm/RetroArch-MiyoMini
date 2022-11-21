@@ -91,6 +91,7 @@ COMPATIBILITY
 #endif
 
 #include "../libretro-common/compat/compat_fnmatch.c"
+#include "../libretro-common/compat/compat_strldup.c"
 #include "../libretro-common/compat/fopen_utf8.c"
 #include "../libretro-common/memmap/memalign.c"
 
@@ -849,6 +850,8 @@ INPUT (HID)
 #include "../input/connect/connect_psxadapter.c"
 #include "../input/connect/connect_retrode.c"
 #include "../input/connect/connect_ps4_hori_mini.c"
+#include "../input/connect/connect_kade.c"
+#include "../input/connect/connect_zerodelay_dragonrise.c"
 #endif
 
 /*============================================================
@@ -1271,6 +1274,8 @@ RETROARCH
 #include "../intl/msg_hash_cs.c"
 #include "../intl/msg_hash_val.c"
 #include "../intl/msg_hash_ca.c"
+#include "../intl/msg_hash_en.c"
+#include "../intl/msg_hash_hu.c"
 #endif
 
 #include "../intl/msg_hash_us.c"

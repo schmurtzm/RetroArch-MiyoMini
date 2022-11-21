@@ -43,7 +43,16 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 
-#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
+#if _MSC_VER && _MSC_VER <= 1600
+/* If we are using MSVC2010 or lower, disable WSAPoll support 
+ * to ensure Windows XP and earlier backwards compatibility */
+#else
+#ifndef WIN32_SUPPORTS_POLL
+#define WIN32_SUPPORTS_POLL 1
+#endif
+#endif
+
+#if defined(WIN32_SUPPORTS_POLL) && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
 #define NETWORK_HAVE_POLL 1
 #endif
 
@@ -394,6 +403,9 @@ int getnameinfo_retro(const struct sockaddr *addr, socklen_t addrlen,
       char *host, socklen_t hostlen, char *serv, socklen_t servlen, int flags);
 
 bool addr_6to4(struct sockaddr_storage *addr);
+
+bool ipv4_is_lan_address(const struct sockaddr_in *addr);
+bool ipv4_is_cgnat_address(const struct sockaddr_in *addr);
 
 /**
  * network_init:

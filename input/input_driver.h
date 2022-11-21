@@ -340,6 +340,12 @@ struct input_driver
     * @return True if the input driver has claimed stdin.
     */
    bool (*grab_stdin)(void *data);
+
+   /**
+    * Haptic feedback for touchscreen key presses. This function pointer can be
+    * set to NULL if haptic feedback / vibration is not supported.
+    */
+   void (*keypress_vibrate)(void);
 };
 
 struct rarch_joypad_driver
@@ -374,6 +380,21 @@ struct input_keyboard_ctx_wait
    input_keyboard_press_t cb;
 };
 
+enum input_driver_state_flags
+{
+   INP_FLAG_NONBLOCKING              = (1 << 0),
+   INP_FLAG_KB_LINEFEED_ENABLE       = (1 << 1),
+   INP_FLAG_KB_MAPPING_BLOCKED       = (1 << 2),
+   INP_FLAG_BLOCK_HOTKEY             = (1 << 3),
+   INP_FLAG_BLOCK_LIBRETRO_INPUT     = (1 << 4),
+   INP_FLAG_BLOCK_POINTER_INPUT      = (1 << 5),
+   INP_FLAG_GRAB_MOUSE_STATE         = (1 << 6),
+   INP_FLAG_OLD_ANALOG_DPAD_MODE_SET = (1 << 7),
+   INP_FLAG_OLD_LIBRETRO_DEVICE_SET  = (1 << 8),
+   INP_FLAG_REMAPPING_CACHE_ACTIVE   = (1 << 9),
+   INP_FLAG_DEFERRED_WAIT_KEYS       = (1 << 10)
+};
+
 typedef struct
 {
    /**
@@ -406,7 +427,10 @@ typedef struct
 #ifdef HAVE_OVERLAY
    input_overlay_t *overlay_ptr;
    enum overlay_visibility *overlay_visibility;
+   float overlay_eightway_dpad_slopes[2];
+   float overlay_eightway_abxy_slopes[2];
 #endif
+   uint16_t flags;
 #ifdef HAVE_NETWORKGAMEPAD
    input_remote_t *remote;
 #endif
@@ -438,18 +462,7 @@ typedef struct
 #endif
 
    /* primitives */
-   bool        nonblocking_flag;
-   bool keyboard_linefeed_enable;
-
-   bool block_hotkey;
-   bool block_libretro_input;
-   bool block_pointer_input;
-   bool grab_mouse_state;
    bool analog_requested[MAX_USERS];
-   bool keyboard_mapping_blocked;
-   bool old_analog_dpad_mode_set;
-   bool old_libretro_device_set;
-   bool remapping_cache_active;
    retro_bits_512_t keyboard_mapping_bits;    /* bool alignment */
    input_game_focus_state_t game_focus_state; /* bool alignment */
 } input_driver_state_t;
@@ -909,7 +922,7 @@ int16_t input_joypad_analog_axis(
 
 void input_keyboard_line_append(
       struct input_keyboard_line *keyboard_line,
-      const char *word);
+      const char *word, size_t len);
 
 /**
  * input_keyboard_start_line:

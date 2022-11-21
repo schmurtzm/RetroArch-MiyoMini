@@ -25,7 +25,6 @@
 #include "../font_driver.h"
 
 #include "../../configuration.h"
-#include "../../verbosity.h"
 
 #define RSX_FONT_EMIT(c, vx, vy) \
    font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
@@ -147,7 +146,6 @@ static void *rsx_font_init(void *data,
             &font->font_driver,
             &font->font_data, font_path, font_size))
    {
-      RARCH_WARN("Couldn't initialize font renderer.\n");
       free(font);
       return NULL;
    }
@@ -201,7 +199,7 @@ error:
 }
 
 static int rsx_font_get_message_width(void *data, const char *msg,
-      unsigned msg_len, float scale)
+      size_t msg_len, float scale)
 {
    const struct font_glyph* glyph_q = NULL;
    rsx_font_t *font   = (rsx_font_t*)data;
@@ -236,7 +234,7 @@ static int rsx_font_get_message_width(void *data, const char *msg,
 static void rsx_font_draw_vertices(rsx_font_t *font,
       const video_coords_t *coords)
 {
-   unsigned i;
+   int i;
    const float *vertex              = coords->vertex;
    const float *tex_coord           = coords->tex_coord;
    const float *color               = coords->color;
@@ -270,17 +268,17 @@ static void rsx_font_draw_vertices(rsx_font_t *font,
 }
 
 static void rsx_font_render_line(
-      rsx_font_t *font, const char *msg, unsigned msg_len,
+      rsx_font_t *font, const char *msg, size_t msg_len,
       float scale, const float color[4], float pos_x,
       float pos_y,unsigned text_align)
 {
-   unsigned i;
+   int i;
    struct video_coords coords;
    const struct font_glyph* glyph_q = NULL;
    float font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    float font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
    float font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
-   rsx_t      *rsx        = font->rsx;
+   rsx_t      *rsx      = font->rsx;
    const char* msg_end  = msg + msg_len;
    int x                = roundf(pos_x * rsx->vp.width);
    int y                = roundf(pos_y * rsx->vp.height);
@@ -366,7 +364,7 @@ static void rsx_font_render_message(
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
       rsx_font_render_line(font,
-            msg, (unsigned)strlen(msg), scale, color, pos_x,
+            msg, strlen(msg), scale, color, pos_x,
             pos_y, text_align);
       return;
    }
@@ -376,8 +374,8 @@ static void rsx_font_render_message(
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
-      unsigned msg_len  = delim
-         ? (unsigned)(delim - msg) : (unsigned)strlen(msg);
+      size_t msg_len    = delim
+         ? (delim - msg) : strlen(msg);
 
       /* Draw the line */
       rsx_font_render_line(font,

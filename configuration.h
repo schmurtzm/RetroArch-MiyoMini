@@ -130,6 +130,10 @@ typedef struct settings
       int bottom_font_color_blue;
       int bottom_font_color_opacity;
 #endif
+#ifdef HAVE_XMB
+      int menu_xmb_title_margin;
+      int menu_xmb_title_margin_horizontal_offset;
+#endif
    } ints;
 
    struct
@@ -210,6 +214,7 @@ typedef struct settings
       unsigned video_monitor_index;
       unsigned video_fullscreen_x;
       unsigned video_fullscreen_y;
+      unsigned video_scale;
       unsigned video_max_swapchain_images;
       unsigned video_max_frame_latency;
       unsigned video_swap_interval;
@@ -265,7 +270,6 @@ typedef struct settings
       unsigned menu_xmb_color_theme;
       unsigned menu_xmb_thumbnail_scale_factor;
       unsigned menu_xmb_vertical_fade_factor;
-      unsigned menu_xmb_title_margin;
       unsigned menu_materialui_color_theme;
       unsigned menu_materialui_transition_animation;
       unsigned menu_materialui_thumbnail_view_portrait;
@@ -285,6 +289,7 @@ typedef struct settings
       unsigned menu_content_show_contentless_cores;
       unsigned menu_screensaver_timeout;
       unsigned menu_screensaver_animation;
+      unsigned menu_remember_selection;
 
       unsigned playlist_entry_remove_enable;
       unsigned playlist_show_inline_core_name;
@@ -295,8 +300,12 @@ typedef struct settings
       unsigned camera_width;
       unsigned camera_height;
 
+#ifdef HAVE_OVERLAY
       unsigned input_overlay_show_inputs;
       unsigned input_overlay_show_inputs_port;
+      unsigned input_overlay_dpad_diagonal_sensitivity;
+      unsigned input_overlay_abxy_diagonal_sensitivity;
+#endif
 
       unsigned run_ahead_frames;
 
@@ -336,7 +345,6 @@ typedef struct settings
    struct
    {
       float placeholder;
-      float video_scale;
       float video_aspect_ratio;
       float video_refresh_rate;
       float crt_video_refresh_rate;
@@ -492,7 +500,6 @@ typedef struct settings
       char directory_video_filter[PATH_MAX_LENGTH];
       char directory_video_shader[PATH_MAX_LENGTH];
       char directory_libretro[PATH_MAX_LENGTH];
-      char directory_cursor[PATH_MAX_LENGTH];
       char directory_input_remapping[PATH_MAX_LENGTH];
       char directory_overlay[PATH_MAX_LENGTH];
 #ifdef HAVE_VIDEO_LAYOUT
@@ -606,6 +613,7 @@ typedef struct settings
       bool input_descriptor_hide_unbound;
       bool input_all_users_control_menu;
       bool input_menu_swap_ok_cancel_buttons;
+      bool input_menu_swap_scroll_buttons;
       bool input_backtouch_enable;
       bool input_backtouch_toggle;
       bool input_small_keyboard_enable;
@@ -704,6 +712,7 @@ typedef struct settings
       bool menu_rgui_particle_effect_screensaver;
       bool menu_xmb_shadows_enable;
       bool menu_xmb_vertical_thumbnails;
+      bool menu_xmb_show_title_header;
       bool menu_content_show_settings;
       bool menu_content_show_favorites;
       bool menu_content_show_images;
@@ -717,6 +726,8 @@ typedef struct settings
       bool menu_use_preferred_system_color_theme;
       bool menu_preferred_system_color_theme_set;
       bool menu_unified_controls;
+      bool menu_disable_info_button;
+      bool menu_disable_search_button;
       bool menu_ticker_smooth;
       bool settings_show_drivers;
       bool settings_show_video;
@@ -858,6 +869,7 @@ typedef struct settings
       bool run_ahead_secondary_instance;
       bool run_ahead_hide_warnings;
       bool pause_nonactive;
+      bool pause_on_disconnect;
       bool block_sram_overwrite;
       bool savestate_auto_index;
       bool savestate_auto_save;
