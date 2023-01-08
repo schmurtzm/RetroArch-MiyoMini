@@ -58,6 +58,9 @@ typedef ID3D12Debug*                              D3D12Debug;
 typedef ID3D12DebugDevice*                        D3D12DebugDevice;
 typedef ID3D12DebugCommandQueue*                  D3D12DebugCommandQueue;
 typedef ID3D12DebugCommandList*                   D3D12DebugCommandList;
+#ifdef DEVICE_DEBUG
+typedef ID3D12DeviceRemovedExtendedDataSettings*  D3D12DeviceRemovedExtendedDataSettings;
+#endif /* DEVICE_DEBUG */
 #endif
 typedef ID3D12InfoQueue*                          D3D12InfoQueue;
 
@@ -78,12 +81,12 @@ typedef struct
    {
       float u, v, w, h;
    } coords;
-   UINT32 colors[4];
    struct
    {
       float scaling;
       float rotation;
    } params;
+   UINT32 colors[4];
 } d3d12_sprite_t;
 
 typedef struct
@@ -112,8 +115,8 @@ typedef struct
    UINT64                             row_size_in_bytes;
    UINT64                             total_bytes;
    d3d12_descriptor_heap_t*           srv_heap;
-   bool                               dirty;
    float4_t                           size_data;
+   bool                               dirty;
 } d3d12_texture_t;
 
 #ifndef ALIGN
@@ -164,6 +167,14 @@ typedef struct
 #endif
    DXGIAdapter adapter;
    D3D12Device device;
+ 
+#ifdef DEVICE_DEBUG
+#ifdef DEBUG
+   D3D12DebugDevice debug_device;
+   D3D12InfoQueue info_queue;
+   D3D12DeviceRemovedExtendedDataSettings device_removed_info;
+#endif /* DEBUG */
+#endif /* DEVICE_DEBUG */
 
    IDXGIAdapter1 *adapters[D3D12_MAX_GPU_COUNT];
    struct string_list *gpu_list;
@@ -293,7 +304,7 @@ typedef struct
    D3D12_CONSTANT_BUFFER_VIEW_DESC ubo_view;
    DXGI_FORMAT                     format;
    D3D12_GPU_DESCRIPTOR_HANDLE     samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
-   math_matrix_4x4                 mvp, mvp_no_rot;
+   math_matrix_4x4                 mvp, mvp_no_rot, identity;
    struct video_viewport           vp;
    D3D12Resource                   menu_pipeline_vbo;
    D3D12_VERTEX_BUFFER_VIEW        menu_pipeline_vbo_view;

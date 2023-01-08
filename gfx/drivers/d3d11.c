@@ -24,8 +24,6 @@
 #define CINTERFACE
 #define COBJMACROS
 
-#include <assert.h>
-
 #include <string/stdstring.h>
 #include <gfx/scaler/pixconv.h>
 #include <retro_miscellaneous.h>
@@ -623,7 +621,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
                &d3d11->luts[0].size_data, sizeof(*d3d11->luts)},
          },
          {
-            &d3d11->mvp,                     /* MVP */
+            i == d3d11->shader_preset->passes - 1 ? &d3d11->mvp : &d3d11->identity, /* MVP */
             &d3d11->pass[i].rt.size_data,    /* OutputSize */
             &d3d11->frame.output_size,       /* FinalViewportSize */
             &d3d11->pass[i].frame_count,     /* FrameCount */
@@ -1240,6 +1238,8 @@ static void *d3d11_gfx_init(const video_info_t* video,
       goto error;
 #endif
 
+   matrix_4x4_identity(d3d11->identity);
+
    video_driver_set_size(d3d11->vp.full_width, d3d11->vp.full_height);
    d3d11->viewport.Width  = d3d11->vp.full_width;
    d3d11->viewport.Height = d3d11->vp.full_height;
@@ -1378,6 +1378,11 @@ static void *d3d11_gfx_init(const video_info_t* video,
          { { 0.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
          { { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
          { { 1.0f, 1.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+
+         { { -1.0f, -1.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+         { { -1.0f,  1.0f }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+         { { 1.0f,  -1.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+         { { 1.0f,   1.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
       };
       D3D11_SUBRESOURCE_DATA vertex_data;
 
@@ -1628,7 +1633,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
       d3d11_fake_context.get_flags   = d3d11_get_flags;
       d3d11_fake_context.get_metrics = win32_get_metrics;
       video_context_driver_set(&d3d11_fake_context); 
-      const char *shader_preset      = retroarch_get_shader_preset();
+      const char *shader_preset      = video_shader_get_current_shader_preset();
       enum rarch_shader_type type    = video_shader_parse_type(shader_preset);
       d3d11_gfx_set_shader(d3d11, type, shader_preset);
    }
@@ -1726,11 +1731,9 @@ static void d3d11_init_history(d3d11_video_t* d3d11, unsigned width, unsigned he
 {
    int i;
 
-   /* TODO/FIXME: should we init history to max_width/max_height instead ?
+   /* TODO/FIXME: Should we init history to max_width/max_height instead ?
     * to prevent out of memory errors happening several frames later
     * and to reduce memory fragmentation */
-
-   assert(d3d11->shader_preset);
    for (i = 0; i < d3d11->shader_preset->history_size + 1; i++)
    {
       d3d11->frame.texture[i].desc.Width  = width;
@@ -1747,8 +1750,6 @@ static void d3d11_init_history(d3d11_video_t* d3d11, unsigned width, unsigned he
 static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsigned height)
 {
    int i;
-
-   assert(d3d11->shader_preset);
 
    for (i = 0; i < (int)d3d11->shader_preset->passes; i++)
    {
@@ -1830,6 +1831,9 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
       }
       else
       {
+         width = retroarch_get_rotation() % 2 ? height : width;
+         height = retroarch_get_rotation() % 2 ? width : height;
+
          d3d11->pass[i].rt.size_data.x = width;
          d3d11->pass[i].rt.size_data.y = height;
          d3d11->pass[i].rt.size_data.z = 1.0f / width;
@@ -2196,7 +2200,11 @@ D3D11_ST_FLAG_HAS_ALLOW_TEARING)) ? 0 : DXGI_PRESENT_ALLOW_TEARING;
                &d3d11->pass[i].rt.rt_view, NULL);
          context->lpVtbl->RSSetViewports(context, 1, &d3d11->pass[i].viewport);
 
-         context->lpVtbl->Draw(context, 4, 0);
+         if (i == d3d11->shader_preset->passes - 1)
+            context->lpVtbl->Draw(context, 4, 0);
+         else
+            context->lpVtbl->Draw(context, 4, 4);
+
          texture = &d3d11->pass[i].rt;
       }
    }

@@ -41,11 +41,11 @@
 #endif
 
 #include "../frontend_driver.h"
-#include "../../verbosity.h"
+#include "../../file_path_special.h"
 #include "../../defaults.h"
 #include "../../paths.h"
-#include "retroarch.h"
-#include "file_path_special.h"
+#include "../../retroarch.h"
+#include "../../verbosity.h"
 
 #include "ctr/ctr_debug.h"
 #include "ctr/exec-3dsx/exec_3dsx.h"
@@ -63,8 +63,6 @@
 
 static enum frontend_fork ctr_fork_mode = FRONTEND_FORK_NONE;
 static const char* elf_path_cst         = "sdmc:/retroarch/retroarch.3dsx";
-
-extern bool ctr_bottom_screen_enabled;
 
 #ifdef IS_SALAMANDER
 static void get_first_valid_core(char* path_return, size_t len)

@@ -156,14 +156,14 @@ static INLINE bool d3d9_renderchain_add_lut(d3d9_renderchain_t *chain,
             NULL,
             false
             );
+   if (!lut)
+      return false;
 
    RARCH_LOG("[D3D9]: LUT texture loaded: %s.\n", path);
 
    info.tex    = lut;
    info.smooth = smooth;
    strlcpy(info.id, id, sizeof(info.id));
-   if (!lut)
-      return false;
 
    IDirect3DDevice9_SetTexture(chain->dev, 0, (IDirect3DBaseTexture9*)lut);
    IDirect3DDevice9_SetSamplerState(chain->dev, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
@@ -180,9 +180,9 @@ static INLINE void d3d9_renderchain_destroy_passes_and_luts(
 {
    if (chain->passes)
    {
-      unsigned i;
+      int i;
 
-      for (i = 0; i < chain->passes->count; i++)
+      for (i = 0; i < (int) chain->passes->count; i++)
       {
          if (chain->passes->data[i].attrib_map)
             free(chain->passes->data[i].attrib_map);
@@ -237,12 +237,11 @@ static INLINE void d3d9_renderchain_end_render(d3d9_renderchain_t *chain)
 
 static INLINE void d3d9_renderchain_unbind_all(d3d9_renderchain_t *chain)
 {
-   unsigned i;
-
+   int i;
    /* Have to be a bit anal about it.
     * Render targets hate it when they have filters apparently.
     */
-   for (i = 0; i < chain->bound_tex->count; i++)
+   for (i = 0; i < (int) chain->bound_tex->count; i++)
    {
       IDirect3DDevice9_SetSamplerState(chain->dev,
             chain->bound_tex->data[i], D3DSAMP_MINFILTER, D3DTEXF_POINT);
@@ -252,7 +251,7 @@ static INLINE void d3d9_renderchain_unbind_all(d3d9_renderchain_t *chain)
             chain->bound_tex->data[i], (IDirect3DBaseTexture9*)NULL);
    }
 
-   for (i = 0; i < chain->bound_vert->count; i++)
+   for (i = 0; i < (int) chain->bound_vert->count; i++)
       IDirect3DDevice9_SetStreamSource(chain->dev, chain->bound_vert->data[i], 0, 0, 0);
 
    if (chain->bound_tex)
@@ -347,7 +346,7 @@ static INLINE void d3d9_recompute_pass_sizes(
       d3d9_renderchain_t *chain,
       d3d9_video_t *d3d)
 {
-   unsigned i;
+   int i;
    struct LinkInfo link_info;
    unsigned input_scale              = d3d->video_info.input_scale
       * RARCH_SCALE_BASE;
@@ -370,7 +369,7 @@ static INLINE void d3d9_recompute_pass_sizes(
       return;
    }
 
-   for (i = 1; i < d3d->shader.passes; i++)
+   for (i = 1; i < (int) d3d->shader.passes; i++)
    {
       d3d9_convert_geometry(
             &link_info,

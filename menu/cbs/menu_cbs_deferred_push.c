@@ -136,6 +136,8 @@ GENERIC_DEFERRED_PUSH(deferred_push_browse_url_start,               DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_core_list,                      DISPLAYLIST_CORES)
 GENERIC_DEFERRED_PUSH(deferred_push_configurations,                 DISPLAYLIST_CONFIG_FILES)
 GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset,            DISPLAYLIST_SHADER_PRESET)
+GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset_prepend,    DISPLAYLIST_SHADER_PRESET_PREPEND)
+GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset_append,     DISPLAYLIST_SHADER_PRESET_APPEND)
 GENERIC_DEFERRED_PUSH(deferred_push_video_shader_pass,              DISPLAYLIST_SHADER_PASS)
 GENERIC_DEFERRED_PUSH(deferred_push_video_filter,                   DISPLAYLIST_VIDEO_FILTERS)
 GENERIC_DEFERRED_PUSH(deferred_push_images,                         DISPLAYLIST_IMAGES)
@@ -202,6 +204,8 @@ GENERIC_DEFERRED_PUSH(deferred_push_menu_bottom_settings_list,      DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_user_interface_settings_list,   DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_power_management_settings_list, DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_retro_achievements_settings_list,DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_cheevos_appearance_settings_list,DISPLAYLIST_CHEEVOS_APPEARANCE_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_cheevos_visibility_settings_list,DISPLAYLIST_CHEEVOS_VISIBILITY_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_updater_settings_list,          DISPLAYLIST_UPDATER_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_bluetooth_settings_list,        DISPLAYLIST_BLUETOOTH_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_wifi_settings_list,             DISPLAYLIST_WIFI_SETTINGS_LIST)
@@ -404,52 +408,41 @@ static int general_push(menu_displaylist_info_t *info,
    char newstring2[PATH_MAX_LENGTH];
    settings_t                  *settings      = config_get_ptr();
    menu_handle_t                  *menu       = menu_state_get_ptr()->driver_data;
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    bool 
       multimedia_builtin_mediaplayer_enable   = settings->bools.multimedia_builtin_mediaplayer_enable;
+#endif
+#ifdef HAVE_IMAGEVIEWER
    bool multimedia_builtin_imageviewer_enable = settings->bools.multimedia_builtin_imageviewer_enable;
+#endif
 
    if (!menu)
       return -1;
-
-   switch (id)
+   
+   if (   (id == PUSH_ARCHIVE_OPEN_DETECT_CORE)
+       || (id == PUSH_ARCHIVE_OPEN))
    {
-      case PUSH_DEFAULT:
-      case PUSH_DETECT_CORE_LIST:
-         break;
-      default:
-         {
-            char tmp_str[PATH_MAX_LENGTH];
-            char tmp_str2[PATH_MAX_LENGTH];
-            fill_pathname_join_special(tmp_str, menu->scratch2_buf,
-                  menu->scratch_buf, sizeof(tmp_str));
-            fill_pathname_join_special(tmp_str2, menu->scratch2_buf,
-                  menu->scratch_buf, sizeof(tmp_str2));
+      /* Need to use the scratch buffer here */
+      char tmp_str[PATH_MAX_LENGTH];
+      char tmp_str2[PATH_MAX_LENGTH];
+      fill_pathname_join_special(tmp_str, menu->scratch2_buf,
+            menu->scratch_buf, sizeof(tmp_str));
+      fill_pathname_join_special(tmp_str2, menu->scratch2_buf,
+            menu->scratch_buf, sizeof(tmp_str2));
 
-            if (!string_is_empty(info->path))
-               free(info->path);
-            if (!string_is_empty(info->label))
-               free(info->label);
+      if (!string_is_empty(info->path))
+         free(info->path);
+      if (!string_is_empty(info->label))
+         free(info->label);
 
-            info->path  = strdup(tmp_str);
-            info->label = strdup(tmp_str2);
-         }
-         break;
+      info->path      = strdup(tmp_str);
+      info->label     = strdup(tmp_str2);
    }
 
    info->type_default = FILE_TYPE_PLAIN;
-
-   switch (id)
-   {
-      case PUSH_ARCHIVE_OPEN_DETECT_CORE:
-      case PUSH_ARCHIVE_OPEN:
-      case PUSH_DEFAULT:
-         info->setting      = menu_setting_find_enum(info->enum_idx);
-         break;
-      default:
-         break;
-   }
-
-   newstring2[0]                  = '\0';
+   if (id != PUSH_DETECT_CORE_LIST)
+      info->setting   = menu_setting_find_enum(info->enum_idx);
+   newstring2[0]      = '\0';
 
    switch (id)
    {
@@ -466,13 +459,10 @@ static int general_push(menu_displaylist_info_t *info,
       case PUSH_DEFAULT:
          {
             const char *valid_extensions     = NULL;
-            struct retro_system_info *system = NULL;
 
-            if (menu_setting_get_browser_selection_type(info->setting) 
-                  != ST_DIR)
+            if (menu_setting_get_browser_selection_type(info->setting) != ST_DIR)
             {
-               system = &runloop_state_get_ptr()->system.info;
-
+               struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
                if (system && !string_is_empty(system->valid_extensions))
                   valid_extensions = system->valid_extensions;
             }
@@ -540,7 +530,7 @@ static int general_push(menu_displaylist_info_t *info,
 
             if (!filter_by_current_core)
             {
-               core_info_list_t *list           = NULL;
+               core_info_list_t *list = NULL;
                core_info_get_list(&list);
                if (list && !string_is_empty(list->all_ext))
                {
@@ -653,9 +643,12 @@ GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_manual_content_sca
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_manual_content_scan_core_name, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_disk_index, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_device_type, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_TYPE)
-GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_device_index, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_INDEX)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_description, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_description_kbd, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION_KBD)
+#ifdef ANDROID
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_select_physical_keyboard, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD)
+#endif
+
 #ifdef HAVE_NETWORKING
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_netplay_mitm_server, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_NETPLAY_MITM_SERVER)
 #endif
@@ -691,9 +684,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE, deferred_push_dropdown_box_list_playlist_sort_mode},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX, deferred_push_dropdown_box_list_disk_index},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE, deferred_push_dropdown_box_list_input_device_type},
-      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_INDEX, deferred_push_dropdown_box_list_input_device_index},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION, deferred_push_dropdown_box_list_input_description},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD, deferred_push_dropdown_box_list_input_description_kbd},
+#ifdef ANDROID
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD, deferred_push_dropdown_box_list_input_select_physical_keyboard},
+#endif
 #ifdef HAVE_NETWORKING
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER, deferred_push_dropdown_box_list_netplay_mitm_server},
 #endif
@@ -731,6 +726,8 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_POWER_MANAGEMENT_SETTINGS_LIST, deferred_push_power_management_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_MENU_SOUNDS_LIST, deferred_push_menu_sounds_list},
       {MENU_ENUM_LABEL_DEFERRED_RETRO_ACHIEVEMENTS_SETTINGS_LIST, deferred_push_retro_achievements_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_CHEEVOS_APPEARANCE_SETTINGS_LIST, deferred_push_cheevos_appearance_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_CHEEVOS_VISIBILITY_SETTINGS_LIST, deferred_push_cheevos_visibility_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_UPDATER_SETTINGS_LIST, deferred_push_updater_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_NETWORK_SETTINGS_LIST, deferred_push_network_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_SUBSYSTEM_SETTINGS_LIST, deferred_push_subsystem_settings_list},
@@ -866,6 +863,8 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS, deferred_push_core_input_remapping_options},
       {MENU_ENUM_LABEL_DEFERRED_REMAP_FILE_MANAGER_LIST, deferred_push_remap_file_manager},
       {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET, deferred_push_video_shader_preset},
+      {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND, deferred_push_video_shader_preset_prepend},
+      {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND, deferred_push_video_shader_preset_append},
       {MENU_ENUM_LABEL_VIDEO_SHADER_PASS, deferred_push_video_shader_pass},
       {MENU_ENUM_LABEL_VIDEO_FILTER, deferred_push_video_filter},
       {MENU_ENUM_LABEL_MENU_WALLPAPER, deferred_push_images},
@@ -1193,6 +1192,12 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset);
             break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset_prepend);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset_append);
+            break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_pass);
             break;
@@ -1263,6 +1268,12 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_ENUM_LABEL_DEFERRED_REWIND_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rewind_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_CHEEVOS_APPEARANCE_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cheevos_appearance_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_CHEEVOS_VISIBILITY_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cheevos_visibility_settings_list);
             break;
          case MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_onscreen_display_settings_list);
