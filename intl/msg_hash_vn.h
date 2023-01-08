@@ -45,10 +45,6 @@ MSG_HASH(
    "Mở rộng"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Các lõi đơn lẻ"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Tạo nội dung"
    )
@@ -291,10 +287,6 @@ MSG_HASH(
    "Duyệt tất cả nội dung khớp với kho dữ liệu thông qua giao diện tìm kiếm theo thể loại."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Các lõi đơn lẻ"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
    "Các lõi đã cài đặt có thể hoạt động mà không cần tải nội dung sẽ xuất hiện ở đây."
    )
@@ -534,14 +526,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
    "Ngăn chặn việc sửa đổi lõi hiện được cài đặt. Có thể được sử dụng để tránh cập nhật không mong muốn khi nội dung yêu cầu phiên bản cốt lõi cụ thể (ví dụ: bộ ROM Arcade)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   "Loại trừ khỏi menu 'Lõi độc lập'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "Ngăn lõi này hiển thị trong tab / menu 'Lõi độc lập'. Chỉ áp dụng khi chế độ hiển thị được đặt thành 'Tùy chỉnh'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -936,20 +920,16 @@ MSG_HASH(
    "Tải cấu hình"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "Khôi phục mặc định"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   "Khôi phục cài đặt hiện tại về giá trị mặc định."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "Lưu cấu hình hiện tại"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "Lưu cấu hình mới"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   "Khôi phục mặc định"
    )
 
 /* Main Menu > Help */
@@ -1286,6 +1266,14 @@ MSG_HASH(
 
 /* Settings > Video > Scaling */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
+   "Config Danh mục"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
+   "Tùy chỉnh"
+   )
 #if defined(DINGUX)
 #endif
 
@@ -1427,6 +1415,8 @@ MSG_HASH(
    "Kích hoạt Autoconfig"
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
+#ifdef ANDROID
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
@@ -1596,8 +1586,20 @@ MSG_HASH(
 /* Settings > Recording */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
+   "Tùy chỉnh"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
    "Kích hoạt Post Filter Recording"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
+   "Tùy chỉnh"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
+   "Tùy chỉnh"
    )
 
 /* Settings > On-Screen Display */
@@ -1713,6 +1715,12 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
    "Enable or disable unofficial achievements and/or beta features for testing purposes."
    )
+
+/* Settings > Achievements > Appearance */
+
+
+/* Settings > Achievements > Visibility */
+
 
 /* Settings > Network */
 

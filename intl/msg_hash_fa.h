@@ -45,10 +45,6 @@ MSG_HASH(
    "کاوش"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "هسته‌های مستقل"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "وارد کردن محتوا"
    )
@@ -291,10 +287,6 @@ MSG_HASH(
    "تمام محتوای مطابق با پایگاه داده را از طریق یک رابط جستجوی طبقه بندی شده مرور کنید."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "هسته‌های مستقل"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
    "هسته‌های نصب‌شده‌ای که می‌توانند بدون بارگذاری محتوا کار کنند، اینجا ظاهر می‌شوند."
    )
@@ -534,14 +526,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
    "از ایجاد تغییر در هستهٔ نصب‌شدهٔ فعلی جلوگیری کنید. ممکن است برای جلوگیری از به‌روزرسانی‌های ناخواسته در زمانی که محتوا به نسخهٔ خاصی از هسته نیاز داشته باشد مفید باشد (مثلاً ROM های آرکید)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   "از گزینگان «هسته‌های مستقل» حذف کن"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "جلوی نمایش دادن این هسته در گزینگان/زبانهٔ «هسته‌های مستقل» را می‌گیرد. فقط وقتی که حالت نمایش روی سفارشی تنظیم شده باشد اعمال می‌شود."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -928,20 +912,16 @@ MSG_HASH(
 /* Main Menu > Configuration File */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "بازنشانی به حالت پیش‌فرض"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   "پیکربندی فعلی را به حالت پیش‌فرض بازنشانی کنید."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "ذخیرهٔ پیکربندی فعلی"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "ذخیرهٔ پیکربندی جدید"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   "بازنشانی به حالت پیش‌فرض"
    )
 
 /* Main Menu > Help */
@@ -1335,10 +1315,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "پالایهٔ دوخطی"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   "به‌منظور نرم کردن لبه‌های تیز پیکسل‌ها، یک محوشدگی اندک به تصویر اضافه می‌کند. این گزینه تأثیر بسیار اندکی روی عملکرد دارد."
-   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
@@ -1469,6 +1445,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
    "نسبت تصویر نمایشگر را مشخص کن."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
+   "سفارشی"
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1695,6 +1675,8 @@ MSG_HASH(
    "پیکربندی خودکار"
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
+#ifdef ANDROID
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
@@ -1923,6 +1905,18 @@ MSG_HASH(
 
 /* Settings > Recording */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
+   "سفارشی"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
+   "سفارشی"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
+   "سفارشی"
+   )
 
 /* Settings > On-Screen Display */
 
@@ -2045,6 +2039,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    "دستاوردها"
    )
+
+/* Settings > Achievements > Appearance */
+
+
+/* Settings > Achievements > Visibility */
+
 
 /* Settings > Network */
 

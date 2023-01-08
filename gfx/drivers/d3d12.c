@@ -23,7 +23,6 @@
 
 #define CINTERFACE
 
-#include <assert.h>
 #include <boolean.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
@@ -111,7 +110,7 @@ static void d3d12_gfx_sync(d3d12_video_t* d3d12)
 #ifdef HAVE_OVERLAY
 static void d3d12_free_overlays(d3d12_video_t* d3d12)
 {
-   unsigned i;
+   int i;
    for (i = 0; i < (unsigned)d3d12->overlays.count; i++)
       d3d12_release_texture(&d3d12->overlays.textures[i]);
 
@@ -190,8 +189,8 @@ static void d3d12_overlay_set_alpha(void* data, unsigned index, float mod)
 
 static bool d3d12_overlay_load(void* data, const void* image_data, unsigned num_images)
 {
+   int i;
    D3D12_RANGE range;
-   unsigned                    i;
    d3d12_sprite_t*             sprites = NULL;
    d3d12_video_t*              d3d12   = (d3d12_video_t*)data;
    const struct texture_image* images  = (const struct texture_image*)image_data;
@@ -290,7 +289,7 @@ static void d3d12_get_overlay_interface(void* data, const video_overlay_interfac
 
 static void d3d12_render_overlay(d3d12_video_t *d3d12)
 {
-   unsigned       i;
+   int i;
 
    if (d3d12->flags & D3D12_ST_FLAG_OVERLAYS_FULLSCREEN)
    {
@@ -433,7 +432,7 @@ static void d3d12_set_hdr10(d3d12_video_t* d3d12, bool hdr10)
 
 static void d3d12_set_filtering(void* data, unsigned index, bool smooth, bool ctx_scaling)
 {
-   int            i;
+   int i;
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
    for (i = 0; i < RARCH_WRAP_MAX; i++)
@@ -493,8 +492,8 @@ static void d3d12_update_viewport(d3d12_video_t *d3d12, bool force_full)
    d3d12->frame.viewport.MaxDepth = 1.0f;
 
    /* having to add vp.x and vp.y here doesn't make any sense */
-   d3d12->frame.scissorRect.top    = 0;
-   d3d12->frame.scissorRect.left   = 0;
+   d3d12->frame.scissorRect.top    = d3d12->vp.y;
+   d3d12->frame.scissorRect.left   = d3d12->vp.x;
    d3d12->frame.scissorRect.right  = d3d12->vp.x + d3d12->vp.width;
    d3d12->frame.scissorRect.bottom = d3d12->vp.y + d3d12->vp.height;
 
@@ -512,13 +511,13 @@ static void d3d12_update_viewport(d3d12_video_t *d3d12, bool force_full)
 
 static void d3d12_free_shader_preset(d3d12_video_t* d3d12)
 {
-   unsigned i;
+   int i;
    if (!d3d12->shader_preset)
       return;
 
    for (i = 0; i < d3d12->shader_preset->passes; i++)
    {
-      unsigned j;
+      int j;
 
       free(d3d12->shader_preset->pass[i].source.string.vertex);
       free(d3d12->shader_preset->pass[i].source.string.fragment);
@@ -613,7 +612,7 @@ static void d3d12_init_pipeline(
 static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-   unsigned         i;
+   int i;
    d3d12_texture_t* source = NULL;
    d3d12_video_t*   d3d12  = (d3d12_video_t*)data;
 
@@ -669,7 +668,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
                &d3d12->luts[0].size_data, sizeof(*d3d12->luts)},
          },
          {
-            &d3d12->mvp,                     /* MVP */
+            i == d3d12->shader_preset->passes - 1 ? &d3d12->mvp : &d3d12->identity,                     /* MVP */
             &d3d12->pass[i].rt.size_data,    /* OutputSize */
             &d3d12->frame.output_size,       /* FinalViewportSize */
             &d3d12->pass[i].frame_count,     /* FrameCount */
@@ -787,7 +786,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          d3d12_set_hdr10(d3d12, true);
       }
    } 
-#endif // HAVE_DXGI_HDR
+#endif /* HAVE_DXGI_HDR */
 
    for (i = 0; i < d3d12->shader_preset->luts; i++)
    {
@@ -1368,8 +1367,10 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 
    d3d12->chain.viewport.Width                     = width;
    d3d12->chain.viewport.Height                    = height;
-   d3d12->chain.scissorRect.right                  = width;
-   d3d12->chain.scissorRect.bottom                 = height;
+   d3d12->chain.scissorRect.left                   = d3d12->vp.x;
+   d3d12->chain.scissorRect.top                    = d3d12->vp.y;
+   d3d12->chain.scissorRect.right                  = d3d12->vp.x + width;
+   d3d12->chain.scissorRect.bottom                 = d3d12->vp.y + height;
 
    return true;
 }
@@ -1459,6 +1460,35 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
       if (!SUCCEEDED(D3D12CreateDevice_(d3d12->adapter, D3D_FEATURE_LEVEL_11_0, &d3d12->device)))
          RARCH_WARN("[D3D12]: Could not create D3D12 device.\n");
    }
+
+#ifdef DEVICE_DEBUG 
+#ifdef DEBUG
+   if (d3d12->device)
+   {
+      if (SUCCEEDED(d3d12->device->lpVtbl->QueryInterface(d3d12->device, uuidof(ID3D12DebugDevice), (void*)&d3d12->debug_device)))
+         RARCH_WARN("[D3D12]: Could not create D3D12 debug device.\n");
+
+      if (SUCCEEDED(d3d12->device->lpVtbl->QueryInterface(d3d12->device, uuidof(ID3D12InfoQueue), (void*)&d3d12->info_queue)))
+      {
+#if 0
+         d3d12->info_queue->lpVtbl->SetBreakOnSeverity(d3d12->info_queue, D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+#endif
+         d3d12->info_queue->lpVtbl->SetBreakOnSeverity(d3d12->info_queue, D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
+#if 0
+         d3d12->info_queue->lpVtbl->SetBreakOnSeverity(d3d12->info_queue, D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
+#endif
+      }
+   }
+
+   if (!SUCCEEDED(D3D12GetDebugInterface(uuidof(ID3D12DeviceRemovedExtendedDataSettings), (void*)&d3d12->device_removed_info)))
+      RARCH_WARN("[D3D12]: Could not create D3D12 device removed info.\n");
+
+   /* Turn on AutoBreadcrumbs and Page Fault reporting */
+   d3d12->device_removed_info->lpVtbl->SetAutoBreadcrumbsEnablement(d3d12->device_removed_info, D3D12_DRED_ENABLEMENT_FORCED_ON);
+   d3d12->device_removed_info->lpVtbl->SetPageFaultEnablement(d3d12->device_removed_info, D3D12_DRED_ENABLEMENT_FORCED_ON);
+   d3d12->device_removed_info->lpVtbl->SetWatsonDumpEnablement(d3d12->device_removed_info, D3D12_DRED_ENABLEMENT_FORCED_ON);
+#endif /* DEBUG */
+#endif /* DEVICE_DEBUG */
 }
 
 static inline void d3d12_release_descriptor_heap(d3d12_descriptor_heap_t* heap)
@@ -1721,6 +1751,11 @@ static void d3d12_create_fullscreen_quad_vbo(
       { { 0.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
       { { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
       { { 1.0f, 1.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+
+      { { -1.0f, -1.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+      { { -1.0f,  1.0f }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+      { { 1.0f,  -1.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+      { { 1.0f,   1.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
    };
 
    view->SizeInBytes    = sizeof(vertices);
@@ -1880,6 +1915,8 @@ static void *d3d12_gfx_init(const video_info_t* video,
    }
 #endif
 
+   matrix_4x4_identity(d3d12->identity);
+
    d3d12_gfx_set_rotation(d3d12, 0);
    video_driver_set_size(d3d12->vp.full_width, d3d12->vp.full_height);
    d3d12->chain.viewport.Width  = d3d12->vp.full_width;
@@ -1911,7 +1948,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
       d3d12_fake_context.get_flags = d3d12_get_flags;
       d3d12_fake_context.get_metrics = win32_get_metrics;
       video_context_driver_set(&d3d12_fake_context); 
-      const char *shader_preset   = retroarch_get_shader_preset();
+      const char *shader_preset   = video_shader_get_current_shader_preset();
       enum rarch_shader_type type = video_shader_parse_type(shader_preset);
       d3d12_gfx_set_shader(d3d12, type, shader_preset);
    }
@@ -1926,13 +1963,10 @@ error:
 
 static void d3d12_init_history(d3d12_video_t* d3d12, unsigned width, unsigned height)
 {
-   unsigned i;
-
+   int i;
    /* TODO/FIXME: should we init history to max_width/max_height instead ?
     * to prevent out of memory errors happening several frames later
     * and to reduce memory fragmentation */
-
-   assert(d3d12->shader_preset);
    for (i = 0; i < (unsigned)d3d12->shader_preset->history_size + 1; i++)
    {
       d3d12->frame.texture[i].desc.Width     = width;
@@ -1949,10 +1983,7 @@ static void d3d12_init_history(d3d12_video_t* d3d12, unsigned width, unsigned he
 
 static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsigned height)
 {
-   unsigned i;
-
-   assert(d3d12->shader_preset);
-
+   int i;
    for (i = 0; i < d3d12->shader_preset->passes; i++)
    {
       struct video_shader_pass* pass = &d3d12->shader_preset->pass[i];
@@ -2010,14 +2041,36 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
 
       RARCH_LOG("[D3D12]: Updating framebuffer size %ux%u.\n", width, height);
 
+      if (i == (d3d12->shader_preset->passes - 1))
+      {
+         d3d12->pass[i].viewport.TopLeftX    = d3d12->vp.x;
+         d3d12->pass[i].viewport.TopLeftY    = d3d12->vp.y;
+         d3d12->pass[i].viewport.Width       = width;
+         d3d12->pass[i].viewport.Height      = height;
+         d3d12->pass[i].viewport.MinDepth    = 0.0f;
+         d3d12->pass[i].viewport.MaxDepth    = 1.0f;
+         d3d12->pass[i].scissorRect.left     = d3d12->vp.x;
+         d3d12->pass[i].scissorRect.top      = d3d12->vp.y;
+         d3d12->pass[i].scissorRect.right    = d3d12->vp.x + width;
+         d3d12->pass[i].scissorRect.bottom   = d3d12->vp.y + height;
+      }
+      else
+      {
+         d3d12->pass[i].viewport.TopLeftX    = 0.0f;
+         d3d12->pass[i].viewport.TopLeftY    = 0.0f;
+         d3d12->pass[i].viewport.Width       = width;
+         d3d12->pass[i].viewport.Height      = height;
+         d3d12->pass[i].viewport.MinDepth    = 0.0f;
+         d3d12->pass[i].viewport.MaxDepth    = 1.0f;
+         d3d12->pass[i].scissorRect.left     = 0.0f;
+         d3d12->pass[i].scissorRect.top      = 0.0f;
+         d3d12->pass[i].scissorRect.right    = width;
+         d3d12->pass[i].scissorRect.bottom   = height;
+      }
+
       if ((i != (d3d12->shader_preset->passes - 1)) || (width != d3d12->vp.width) ||
           (height != d3d12->vp.height))
       {
-         d3d12->pass[i].viewport.Width     = width;
-         d3d12->pass[i].viewport.Height    = height;
-         d3d12->pass[i].viewport.MaxDepth  = 1.0;
-         d3d12->pass[i].scissorRect.right  = width;
-         d3d12->pass[i].scissorRect.bottom = height;
          d3d12->pass[i].rt.desc.Width      = width;
          d3d12->pass[i].rt.desc.Height     = height;
          d3d12->pass[i].rt.desc.Flags      = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
@@ -2037,6 +2090,9 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
       }
       else
       {
+         width = retroarch_get_rotation() % 2 ? height : width;
+         height = retroarch_get_rotation() % 2 ? width : height;
+
          d3d12->pass[i].rt.size_data.x = width;
          d3d12->pass[i].rt.size_data.y = height;
          d3d12->pass[i].rt.size_data.z = 1.0f / width;
@@ -2135,8 +2191,10 @@ static bool d3d12_gfx_frame(
 
       d3d12->chain.viewport.Width         = video_width;
       d3d12->chain.viewport.Height        = video_height;
-      d3d12->chain.scissorRect.right      = video_width;
-      d3d12->chain.scissorRect.bottom     = video_height;
+      d3d12->chain.scissorRect.left       = d3d12->vp.x;
+      d3d12->chain.scissorRect.top        = d3d12->vp.y;
+      d3d12->chain.scissorRect.right      = d3d12->vp.x + video_width;
+      d3d12->chain.scissorRect.bottom     = d3d12->vp.y + video_height;
       d3d12->flags                       &= ~D3D12_ST_FLAG_RESIZE_CHAIN;
       d3d12->flags                       |=  D3D12_ST_FLAG_RESIZE_VIEWPORT;
 
@@ -2472,7 +2530,10 @@ static bool d3d12_gfx_frame(
             D3D12RSSetScissorRects(d3d12->queue.cmd, 1,
                   &d3d12->pass[i].scissorRect);
 
-            D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
+            if (i == d3d12->shader_preset->passes - 1)
+               D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
+            else
+               D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 4, 0);
 
             d3d12_resource_transition(
                   d3d12->queue.cmd, d3d12->pass[i].rt.handle,

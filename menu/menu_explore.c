@@ -741,7 +741,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
 
          if (src->entry_index == (uint32_t)-1)
          {
-            src->entry_index = RBUF_LEN(state->entries);
+            src->entry_index = (uint32_t)RBUF_LEN(state->entries);
             RBUF_RESIZE(state->entries, src->entry_index + 1);
          }
          e = &state->entries[src->entry_index];
@@ -1166,10 +1166,8 @@ static void explore_load_view(explore_state_t *state, const char* path)
    state->view_levels = 0;
    state->view_search[0] = '\0';
 
-   file = intfstream_open_file(path,
-         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!file)
+   if (!(file = intfstream_open_file(path,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE)))
       return;
 
    json = rjson_open_stream(file);
@@ -1244,10 +1242,11 @@ static void explore_load_view(explore_state_t *state, const char* path)
                for (i = 0, ifrom = 0, ito = imax, cmp = 1; ito && cmp;)
                {
                   size_t remain = ito % 2;
-                  ito = ito / 2;
-                  i = ifrom + ito;
-                  cmp = compare_func(&evalue, &entries[i]);
-                  ifrom = (cmp < 0 ? ifrom : (i + remain));
+                  ito           = ito / 2;
+                  i             = ifrom + ito;
+                  cmp           = compare_func(&evalue, &entries[i]);
+                  if (cmp >= 0)
+                     ifrom      = (uint32_t)(i + remain);
                }
 
                if (op == EXPLORE_OP_EQUAL && !cmp)
@@ -1383,8 +1382,11 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME),
             state->view_search);
 
-   state->show_icons = (current_cat == EXPLORE_BY_SYSTEM
-         ? EXPLORE_ICONS_SYSTEM_CATEGORY : EXPLORE_ICONS_OFF);
+   state->show_icons = (current_cat == EXPLORE_BY_SYSTEM)
+         ? EXPLORE_ICONS_SYSTEM_CATEGORY
+         : (current_type >= EXPLORE_TYPE_FIRSTITEM)
+               ? EXPLORE_ICONS_CONTENT
+               : EXPLORE_ICONS_OFF;
 
    if (     current_type == MENU_EXPLORE_TAB 
          || current_type == EXPLORE_TYPE_ADDITIONALFILTER)
@@ -1537,6 +1539,7 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
       else
       {
          /* Game list */
+         state->show_icons = EXPLORE_ICONS_CONTENT;
          explore_menu_entry(list, state,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER),
                EXPLORE_TYPE_ADDITIONALFILTER, explore_action_ok);
@@ -1544,7 +1547,6 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
                msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_SAVE_VIEW),
                EXPLORE_TYPE_VIEW, explore_action_ok_saveview);
          explore_menu_add_spacer(list);
-         state->show_icons = EXPLORE_ICONS_CONTENT;
       }
 
       first_list_entry = list->size;
@@ -1658,7 +1660,7 @@ SKIP_ENTRY:;
           * and information screen think we're viewing via playlist */
          menu_displaylist_info_init(&info);
          playlist_set_cached_external(pl);
-         menu->rpl_entry_selection_ptr = (pl_entry - pl_first);
+         menu->rpl_entry_selection_ptr = (unsigned)(pl_entry - pl_first);
          strlcpy(menu->deferred_path,
                pl_entry->path, sizeof(menu->deferred_path));
          info.list                     = list;

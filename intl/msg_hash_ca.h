@@ -42,15 +42,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
-   "Explorar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Nuclis independents"
+   "Explora"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
-   "Importar contingut"
+   "Importa contingut"
    )
 
 /* Main Menu */
@@ -115,7 +111,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "Importar Contingut"
+   "Importa contingut"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
@@ -289,10 +285,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "Explora tots els continguts que coincideixin amb la base de dades mitjançant una interfície de cerca categoritzada."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Nuclis independents"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
@@ -526,14 +518,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
    "Evita la modificació del nucli instal·lat actualment. Es pot utilitzar per evitar actualitzacions no desitjades quan el contingut requereix una versió del nucli específica (per exemple, conjunts de ROM d'arcade)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   "Exclou del menú 'Nuclis Autònoms'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "Evita mostrar aquest nucli al menú/pestanya de 'Nuclis Autònoms'. Només aplica quan s'estableix a 'Personalitzat' el mode de visualització."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -874,7 +858,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
-   "Idioma"
+   "Llengua"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
@@ -1016,20 +1000,16 @@ MSG_HASH(
    "Carregar configuració"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "Restaurar als valors per defecte"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   "Canvia la configuració present als valors predeterminats."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "Desar la configuració present"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "Desar nova configuració"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   "Restaurar als valors per defecte"
    )
 
 /* Main Menu > Help */
@@ -1242,7 +1222,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Canvia les opcions del compte, del nom d'usuari i de l'idioma."
+   "Canvia les opcions del compte, el nom d’usuari i la llengua."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
@@ -1254,6 +1234,10 @@ MSG_HASH(
    )
 
 /* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
+   "Mapatge"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
    "Mitjà"
@@ -1277,6 +1261,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
    "Sistema"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
+   "Temps"
    )
 
 #ifdef HAVE_MIST
@@ -1466,10 +1454,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Filtre bilineal"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   "Difumina lleugerament la imatge per suavitzar les vores dels píxels. Aquesta opció té molt poc impacte sobre el rendiment."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1874,6 +1858,22 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
    "Valor de coma flotant per la relació d'aspecte del vídeo (amplada / alçada)."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
+   "Configuració"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CORE_PROVIDED,
+   "Proporcionada pel nucli"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
+   "Personalitzat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
+   "Completa"
+   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
@@ -1979,6 +1979,10 @@ MSG_HASH(
    "Interval d'intercanvi de VSync"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   "Usa un interval d’intercanvi personalitzat per la sincronització vertical. Redueix la freqüència d’actualització del monitor pel factor especificat. «Automàtic» estableix el factor depenent dels fotogrames per segon que indica el nucli, proporcionant una millora en la taxa de fotogrames quan per exemple s’executa un contingut a 30 fps en una pantalla a 60 Hz o un contingut a 60 fps en una pantalla a 120 Hz."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    "Automàtic"
    )
@@ -1989,6 +1993,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
    "El VSync roman actiu fins que el rendiment cau per davall de la freqüència de refresc establerta. Pot minimitzar l'entretallament quan el rendiment cau per davall del temps real, i pot ser més energèticament eficient."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
+   "Retard de fotograma (ms)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
@@ -2384,6 +2392,8 @@ MSG_HASH(
    "Manté les combinacions de tecles Windows dins l'aplicació."
    )
 #endif
+#ifdef ANDROID
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "Sensor d'entrada auxiliar"
@@ -2419,6 +2429,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
    "Detecta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
+   "Posa en pausa el contingut quan es desconnecti el comandament"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
@@ -2533,6 +2547,14 @@ MSG_HASH(
    "Canvia els controls d'aquest port."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Solució per les desconnexions d’Android"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Evita que els comandaments es desconnectin i es reconnectin contínuament. Impedeix que 2 jugadors facin servir comandaments idèntics."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
    "Confirma la sortida"
    )
@@ -2571,12 +2593,32 @@ MSG_HASH(
    "Useu els mateixos controls per a ambdós, el menú i el joc. Aplica al teclat."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
+   "Inhabilita el botó d’informació"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
+   "Si s’activa s’ignoraran les pulsacions del botó d’informació."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
+   "Inhabilita el botó de cerca"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
+   "Si s’activa s’ignoraran les pulsacions del botó de cerca."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
    "El menú inverteix els botons d'OK i Cancel·la"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
    "Inverteix els botons d'OK/Cancel·la. Desactivat correspon a l'orientació japonesa, activat correspon a l'orientació occidental."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
+   "Intercanvia els botons de desplaçament dels menús"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
@@ -2598,8 +2640,16 @@ MSG_HASH(
    "Retard de l'activació de les dreceres de teclat (fotogrames)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   "Commuta el menú (combinació de botons)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "Combinació de botons del controlador per a activar el menú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
+   "Commuta el menú"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
@@ -2932,20 +2982,12 @@ MSG_HASH(
    "Tipus d’analògic a digital"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
-   "Usa la palanca analògica especificada com a senyal d'entrada per a la creueta. Si el nucli té suport natiu de control analògic, les assignacions de la creueta es desactivarán llevat que s'hagi seleccionat una opció forçada. Forçant les assignacions de creueta, el nucli no rebrá cap entrada analògica de la palanca especificada."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
    "Índex del dispositiu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    "Port assignat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
-   "Especifica quin dels ports del nucli (usualment, el número del jugador) rebrà les senyals d'entrada del port de comandament %u del front-end."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -3204,6 +3246,10 @@ MSG_HASH(
 
 
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
+   "Mostra l’opció «Gestiona els nuclis» al menú principal."
+)
 
 
 
@@ -3366,6 +3412,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
    "Canvia les opcions del comptador de duració de fotogrames.\nNomés en funcionament quan estigui desactivat el vídeo multifil."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   "Limita la velocitat de fotogrames al menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+   "S’assegura que la velocitat de fotogrames dins del menú està limitada."
+   )
 
 /* Settings > Frame Throttle > Rewind */
 
@@ -3380,8 +3434,20 @@ MSG_HASH(
 /* Settings > Recording */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
+   "Personalitzat"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
    "Captura la imatge després d'aplicar els filtres (però no els shaders). El vídeo es veurà tan elegant com el veieu a la pantalla."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
+   "Personalitzat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
+   "Personalitzat"
    )
 
 /* Settings > On-Screen Display */
@@ -3484,12 +3550,36 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
    "Opacitat de tots els elements de la IU de la superposició."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
+   "Superposició predefinida"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "Aplica un factor de correcció de la relació d’aspecte a la superposició quan la pantalla està orientada horitzontalment. Els valors positius augmenten l’amplada efectiva de la superposició mentre que els negatius la redueixen."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "Aplica un factor de correcció de la relació d’aspecte a la superposició quan la pantalla està orientada verticalment. Els valors positius augmenten l’alçada efectiva de la superposició mentre que els negatius la redueixen."
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 
 
 /* Settings > On-Screen Display > On-Screen Notifications */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
+   "Canvia automàticament la mida de les notificacions decorades, indicadors i controls segons l’escala actual del menú."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
+   "Força un factor d’escalat manual quan es dibuixen ginys de visualització en mode de pantalla completa. Només s’aplica quan l’opció «Escala automàticament els ginys gràfics» està desactivada. Es pot fer servir per augmentar o disminuir la mida de les notificacions decorades, indicadors i controls independentment del menú."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+   "Força un factor d’escalat manual quan es dibuixen ginys de visualització en mode de finestra. Només s’aplica quan l’opció «Escala automàticament els ginys gràfics» està desactivada. Es pot fer servir per augmentar o disminuir la mida de les notificacions decorades, indicadors i controls independentment del menú."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
    "Mostra el ping del joc en línia"
@@ -3599,16 +3689,8 @@ MSG_HASH(
    "Posició de les notificacions (horitzontal)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
-   "Especifica una posició X personalitzada pel text en pantalla."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    "Posició de les notificacions (vertical)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
-   "Especifica una posició Y personalitzada pel text en pantalla."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
@@ -3645,6 +3727,14 @@ MSG_HASH(
 
 /* Settings > User Interface */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
+   "Visibilitat dels elements del menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
+   "Commuta la visibilitat dels elements del menú al RetroArch."
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    "Canvia les opcions de l'aparença del menú."
@@ -3951,14 +4041,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
    "Mostra l’opció de l’explorador de contingut. (Cal reiniciar a Ozone/XMB)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Mostra «Nuclis independents»"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Especifica el tipus de nucli a mostrar al menú «Nuclis independents». Quan és «Personalitzat», es pot canviar la visibilitat de cada nucli individual mitjançant el menú «Gestiona els nuclis». (Cal reiniciar a Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -4302,12 +4384,88 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
    "Miniatures"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
+   "Sempre"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_PLAYLISTS,
+   "Només per les llistes de reproducció"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
+   "Només pel menú principal i la configuració"
+   )
 
 /* Settings > AI Service */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
+   "Sortida del servei d’IA"
+   )
+MSG_HASH( /* FIXME What does the Narrator mode do? */
+   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
+   "Mostra la traducció com una superposició de text (mode d’imatge) o reprodueix-la com a «text a parla» (mode de parla)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   "URL del servei d’IA"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_URL,
+   "Un URL http:// apuntant al servei de traducció que s’usarà."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
+   "Servei d’IA habilitat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_ENABLE,
+   "Habilita el servei d’IA perquè s’executi quan es premi la tecla de drecera del servei d’IA."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_PAUSE,
+   "Pausa durant la traducció"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_PAUSE,
+   "Posa en pausa el nucli mentre es tradueix la pantalla."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
+   "Llengua original"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_SOURCE_LANG,
+   "La llengua des de la qual traduirà el servei. Si és «Per defecte» s’intentarà detectar automàticament la llengua. Si es tria una llengua específica la traducció serà més acurada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
+   "Llengua final"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
+   "La llengua a la qual traduirà el servei. «Per defecte» és anglès."
+   )
 
 /* Settings > Accessibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
+   "Activa l’accessibilitat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
+   "Activa la conversió de text a parla per ajudar en la navegació pels menús."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+   "Velocitat de la conversió de text a parla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+   "La velocitat de la veu de la conversió de text a parla."
+   )
 
 /* Settings > Power Management */
 
@@ -4318,13 +4476,143 @@ MSG_HASH(
    "Assoliments"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
+   "Guanya assoliments en jocs clàssics. Per a més informació visiteu «https://retroachievements.org»."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
    "Mode expert"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Desactiva els trucs, el rebobinat, la càmera lenta i la càrrega de desats ràpids. Els assoliments guanyats en el mode expert es marquen de forma única perquè pugueu mostrar als altres el que heu aconseguit sense ajuda de les funcionalitats especials de l’emulador. Si es commuta aquesta opció durant l’execució es reiniciarà el joc."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
+   "Taules de classificació"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
    "Taules de classificació específiques del joc. No té efecte si el «mode expert» està desactivat."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
+   "Presència rica"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
+   "Envia periòdicament informació contextual sobre el joc al web de RetroAchievements. No té cap efecte si el «mode expert» està activat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
+   "Insígnies dels assoliments"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
+   "Mostra insígnies a la llista d’assoliments."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
+   "Prova assoliments no oficials"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
+   "Usa assoliments no oficials i/o característiques en beta amb finalitats de verificació."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "So de desbloqueig"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "Reprodueix un so quan es desbloqueja un assoliment."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
+   "Captura de pantalla automàtica"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
+   "Fa una captura de pantalla automàticament quan es desbloqueja un assoliment."
+   )
+MSG_HASH( /* suggestion for translators: translate as 'Play Again Mode' */
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
+   "Mode bis"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
+   "Comença la sessió amb tots els assoliments actius (fins i tot els que ja estan desbloquejats)."
+   )
+
+/* Settings > Achievements > Appearance */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
+   "Aparença"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_SETTINGS,
+   "Canvia la posició i desplaçaments de les notificacions d’assoliments en pantalla."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR,
+   "Posició"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_ANCHOR,
+   "Estableix la cantonada/vora de la pantalla des d’on apareixeran les notificacions d’assoliments."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT,
+   "A dalt a l’esquerra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER,
+   "A dalt al centre"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPRIGHT,
+   "A dalt a la dreta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMLEFT,
+   "A baix a l’esquerra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER,
+   "A baix al centre"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMRIGHT,
+   "A baix a la dreta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_AUTO,
+   "Separació alineada"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_AUTO,
+   "Estableix si les notificacions d’assoliments s’haurien d’alinear amb altres tipus de notificacions en pantalla. Desactiveu-ho per definir valors de separació/posició manuals."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_H,
+   "Separació horitzontal manual"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   "Distància des de la vora esquerra/dreta de la pantalla, que pot compensar l’overscan de la pantalla."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_V,
+   "Separació vertical manual"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_V,
+   "Distància des de la vora superior/inferior de la pantalla, que pot compensar l’overscan de la pantalla."
+   )
+
+/* Settings > Achievements > Visibility */
+
 
 /* Settings > Network */
 
@@ -4395,6 +4683,10 @@ MSG_HASH(
    "Darrera partida:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   "segons"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
    "Cerca sense coincidència de nucli"
    )
@@ -4434,7 +4726,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
-   "Idioma"
+   "Llengua"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_LANGUAGE,
+   "Estableix la llengua de la interfície d’usuari."
    )
 
 /* Settings > User > Privacy */
@@ -4442,6 +4738,10 @@ MSG_HASH(
 
 /* Settings > User > Accounts */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
+   "Guanya assoliments en jocs clàssics. Per a més informació visiteu «https://retroachievements.org»."
+   )
 
 /* Settings > User > Accounts > RetroAchievements */
 
@@ -4859,8 +5159,24 @@ MSG_HASH(
 
 /* Explore tab */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST,
+   "S’està inicialitzant la llista..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
+   "Any de publicació"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_PLAYER_COUNT,
+   "Nombre de jugadors"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,
    "Regió"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAG,
+   "Etiqueta"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME,
@@ -4871,12 +5187,80 @@ MSG_HASH(
    "Mostra'ls tots"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ADDITIONAL_FILTER,
+   "Filtre addicional"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_ALL,
    "Tots"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER,
+   "Afegeix un filtre addicional"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT,
    "%u elements"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
+   "Per desenvolupador"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
+   "Per editor"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
+   "Per any de publicació"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
+   "Per nombre de jugadors"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
+   "Per gènere"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ACHIEVEMENTS,
+   "Per assoliments"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CATEGORY,
+   "Per categoria"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_LANGUAGE,
+   "Per llengua"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,
+   "Per regió"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONSOLE_EXCLUSIVE,
+   "Per exclusivitat de consola"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLATFORM_EXCLUSIVE,
+   "Per exclusivitat de plataforma"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RUMBLE,
+   "Per vibració"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SCORE,
+   "Per puntuació"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_MEDIA,
+   "Per suport"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONTROLS,
+   "Per controls"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ARTSTYLE,
@@ -4925,6 +5309,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
    "Per nom del sistema"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER,
+   "Estableix el filtre de rang"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_EXPLORE_VIEW,
@@ -5241,12 +5629,24 @@ MSG_HASH(
    "Carrega"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
+   "Carrega un shader predefinit. El pipeline de shaders es configurarà automàticament."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
    "Desa"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
+   "Desa el shader predefinit actual."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
    "Elimina"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
+   "Suprimeix un shader predefinit automàtic."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
@@ -5255,11 +5655,79 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "Predefinicions simples"
+   )
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "Desa una predefinició de shader que té un enllaç a la predefinició carregada originalment i inclou només els paràmetres canviats."
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
+   "Anomena i desa la predefinició de shader"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
+   "Desa la configuració actual del shader com una nova predefinició de shader."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+   "Desa com a predefinició global"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
+   "Desa com a predefinició del nucli"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
+   "Desa com a predefinició del directori de contingut"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
+   "Desa com a predefinició del joc"
+   )
 
 /* Quick Menu > Shaders > Remove */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
+   "No s’han trobat predefinicions de shader automàtiques"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+   "Suprimeix la predefinició global"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+   "Suprimeix la predefinició global, usada per tots els continguts i tots els nuclis."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE,
+   "Suprimeix la predefinició del nucli"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,
+   "Suprimeix la predefinició del nucli, usada per tots els continguts executats amb el nucli actual."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+   "Suprimeix la predefinició del directori de contingut"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+   "Suprimeix la predefinició del directori de contingut, usada per tots els continguts dins del directori actual."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME,
+   "Suprimeix la predefinició del joc"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
+   "Suprimeix la predefinició del joc, usada només pel joc en qüestió."
+   )
 
 /* Quick Menu > Shaders > Shader Parameters */
 
@@ -5621,6 +6089,26 @@ MSG_HASH(
 
 /* RGUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   "Relació d’aspecte del menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
+   "Seleccioneu la relació d’aspecte del menú. Les relacions de pantalla panoràmica incrementen la resolució horitzontal de la interfície del menú. (Pot caldre reiniciar si l’opció «Bloqueja la relació d’aspecte del menú» està desactivada)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
+   "Bloqueja la relació d’aspecte del menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
+   "Assegura que el menú es vegi sempre amb la relació d’aspecte correcta. Si es desactiva, el menú ràpid s’estirarà per coincidir amb el contingut carregat."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII,
+   "Habilita la visualització de caràcters ASCII no estàndards. És necessari per compatibilitat amb certes llengües occidentals no angleses. Afecta moderadament al rendiment."
+   )
 
 /* RGUI: Settings Options */
 
@@ -5637,12 +6125,36 @@ MSG_HASH(
    "Automàtic"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
+   "16:9 (centrat)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
+   "16:10 (centrat)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
+   "3:2 (centrat)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE,
+   "5:3 (centrat)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    "No"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
+   "Ajusta a la pantalla"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    "Escalat d'enter"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,
+   "Omple la pantalla (estirat)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
@@ -6338,12 +6850,56 @@ MSG_HASH(
    "Executa"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SECONDS,
+   "segons"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_START_CORE,
+   "Inicia el nucli"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_START_CORE,
+   "Inicia el nucli sense contingut."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
+   "Nuclis suggerits"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
+   "No es pot llegir el fitxer comprimit."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
    "Usuari"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_KEYBOARD,
+   "Teclat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+   "Fes servir el visualitzador d’imatges integrat"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
    "Sincronització rígida de la CPU i GPU. Redueix la latència a cost de rendiment."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   "Latència de fotograma màxima"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   "Shader predefinit"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
+   "Shader predefinit"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
+   "Shader predefinit"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
@@ -6356,6 +6912,14 @@ MSG_HASH(
 
 /* Unused (Only Exist in Translation Files) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO,
+   "Relació d’aspecte automàtica"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT,
+   "Força la relació d’aspecte"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESUME,
    "Continua"
@@ -6707,6 +7271,114 @@ MSG_HASH(
    )
 
 MSG_HASH(
+   MSG_CONNECTING_TO_PORT,
+   "S’està connectant al port"
+   )
+MSG_HASH(
+   MSG_CONNECTION_SLOT,
+   "Ranura de connexió"
+   )
+MSG_HASH(
+   MSG_FETCHING_CORE_LIST,
+   "S’està recuperant la llista de nuclis..."
+   )
+MSG_HASH(
+   MSG_CORE_LIST_FAILED,
+   "No s’ha pogut recuperar la llista de nuclis!"
+   )
+MSG_HASH(
+   MSG_LATEST_CORE_INSTALLED,
+   "La darrera versió ja està instal·lada: "
+   )
+MSG_HASH(
+   MSG_UPDATING_CORE,
+   "S’està actualitzant el nucli: "
+   )
+MSG_HASH(
+   MSG_DOWNLOADING_CORE,
+   "S’està baixant el nucli: "
+   )
+MSG_HASH(
+   MSG_EXTRACTING_CORE,
+   "S’està extraient el nucli: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLED,
+   "S’ha instal·lat el nucli: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALL_FAILED,
+   "No s’ha pogut instal·lar el nucli: "
+   )
+MSG_HASH(
+   MSG_SCANNING_CORES,
+   "S’estan cercant nuclis..."
+   )
+MSG_HASH(
+   MSG_CHECKING_CORE,
+   "S’està comprovant el nucli: "
+   )
+MSG_HASH(
+   MSG_ALL_CORES_UPDATED,
+   "Tots els nuclis instal·lats estan actualitzats"
+   )
+MSG_HASH(
+   MSG_ALL_CORES_SWITCHED_PFD,
+   "S’han canviat tots els nuclis admesos a les versions de la Play Store"
+   )
+MSG_HASH(
+   MSG_NUM_CORES_UPDATED,
+   "nuclis actualitzats: "
+   )
+MSG_HASH(
+   MSG_NUM_CORES_LOCKED,
+   "nuclis omesos: "
+   )
+MSG_HASH(
+   MSG_CORE_UPDATE_DISABLED,
+   "S’ha inhabilitat l’actualització del nucli. El nucli està bloquejat: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_RESETTING_CORES,
+   "S’estan reiniciant els nuclis: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_CORES_RESET,
+   "S’han reiniciat els nuclis: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST,
+   "S’està netejant la llista de reproducció: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED,
+   "S’ha netejat la llista de reproducció: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG,
+   "Ha fallat l’actualització. La llista de reproducció no conté cap registre de cerca vàlid: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
+   "Ha fallat l’actualització. El directori de contingut no és vàlid o no hi és: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME,
+   "Ha fallat l’actualització. El nom de sistema no és vàlid o no hi és: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE,
+   "Ha fallat l’actualització. El nucli no és vàlid: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_DAT_FILE,
+   "Ha fallat l’actualització. El fitxer DAT d’arcade no és vàlid o no hi és: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE,
+   "Ha fallat l’actualització. El fitxer DAT d’arcade és massa gran (no hi ha prou memòria): "
+   )
+MSG_HASH(
    MSG_APPLICATION_DIR,
    "Directori de l’aplicació"
    )
@@ -6745,10 +7417,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUTO_SAVE_STATE_TO,
    "Desa l’estat automàticament a"
-   )
-MSG_HASH(
-   MSG_BLOCKING_SRAM_OVERWRITE,
-   "S’està blocant la sobreescriptura de SRAM"
    )
 MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
@@ -7107,6 +7775,10 @@ MSG_HASH(
    "No està disponible el rebobinat perquè aquest nucli no té suport d'estat desats serialitzats."
    )
 MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "S’està blocant la sobreescriptura de SRAM"
+   )
+MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Premeu una altra vegada per sortir..."
    )
@@ -7239,6 +7911,14 @@ MSG_HASH(
    "S’ha activat un truc. S’ha desactivat el mode expert d’assoliments per la sessió actual."
    )
 MSG_HASH(
+   MSG_RGUI_MISSING_FONTS,
+   "Atenció: falten tipus de lletra per la llengua seleccionada, useu l’actualitzador en línia si està disponible"
+   )
+MSG_HASH(
+   MSG_RGUI_INVALID_LANGUAGE,
+   "Avís: no s’admet aquesta llengua, s’usarà l’anglès"
+   )
+MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,
    "Ha fallat la instal·lació del nucli: "
    )
@@ -7259,6 +7939,126 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
    "Connexió sense fils Wi-Fi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
+   "Desconnecta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
+   "Antipampallugueig"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
+   "Estableix l’amplada de la pantalla de la VI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
+   "Correcció d’overscan (superior)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+   "Correcció d’overscan (inferior)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
+   "Mode de rendiment sostingut"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERFPOWER,
+   "Rendiment i potència de la CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_ENTRY,
+   "Política"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE,
+   "Mode de governança"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANUAL,
+   "Permet ajustar manualment tots els detalls en cada CPU: governador, freqüències, etc. Es recomana només per a usuaris avançats."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
+   "Rendiment (gestionat)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
+   "Mode per defecte i recomanat. Ofereix el màxim rendiment mentre es juga i permet estalviar energia durant les pauses i en els menús."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
+   "Personalitzat gestionat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
+   "Permet triar quins governadors es faran servir als menús i durant el joc. Durant el joc es recomana fer servir Performance, Ondemand o Schedutil."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
+   "Màxim rendiment"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
+   "Sempre el màxim rendiment: les freqüències més altes per obtenir la millor experiència."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
+   "Mínima potència"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
+   "Usa la freqüència més baixa disponible per estalviar energia. És útil en dispositius que funcionen amb bateria però el rendiment baixa significativament."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "Equilibrat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "S’adapta a la càrrega actual. Funciona bé amb la majoria de dispositius i emuladors i ajuda a estalviar energia. Els jocs i nuclis més exigents poden perdre rendiment en alguns dispositius."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
+   "Mínima freqüència"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MAX_FREQ,
+   "Màxima freqüència"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MIN_FREQ,
+   "Mínima freqüència del nucli"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ,
+   "Màxima freqüència del nucli"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_GOVERNOR,
+   "Governador de la CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_CORE_GOVERNOR,
+   "Governador del nucli"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MENU_GOVERNOR,
+   "Governador del menú"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
+   "Mode de joc"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
+   "Pot millorar el rendiment, reduir la latència i arreglar problemes d’àudio crepitant. Necessitareu https://github.com/FeralInteractive/gamemode perquè funcioni."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
+   "Usa el mode PAL60"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,

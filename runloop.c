@@ -1090,7 +1090,6 @@ static bool validate_per_core_options(char *s,
    return true;
 }
 
-
 static bool validate_game_options(
       const char *core_name,
       char *s, size_t len, bool mkdir)
@@ -2665,9 +2664,15 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (video_fullscreen)
                video_driver_hide_mouse();
 
-            /* Recalibrate frame delay target */
+            /* Recalibrate frame delay target when video reinits
+             * and pause frame delay when video does not reinit */
             if (settings->bools.video_frame_delay_auto)
-               video_st->frame_delay_target = 0;
+            {
+               if (no_video_reinit)
+                  video_st->frame_delay_pause  = true;
+               else
+                  video_st->frame_delay_target = 0;
+            }
 
             return true;
          }
@@ -2873,6 +2878,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             /* Forces recomputation of aspect ratios if
              * using core-dependent aspect ratios. */
             video_driver_set_aspect_ratio();
+
+            /* Ignore frame delay target temporarily */
+            if (settings->bools.video_frame_delay_auto)
+               video_st->frame_delay_pause = true;
 
             /* TODO: Figure out what to do, if anything, with 
                recording. */
@@ -3600,8 +3609,7 @@ static void runloop_fastmotion_override_free(runloop_state_t *runloop_st)
    runloop_st->fastmotion_override.pending                = false;
 
    if (reset_frame_limit)
-      runloop_st->frame_limit_minimum_time                = 
-         runloop_set_frame_limit(&video_st->av_info, fastforward_ratio);
+      runloop_set_frame_limit(&video_st->av_info, fastforward_ratio);
 }
 
 void runloop_state_free(runloop_state_t *runloop_st)
@@ -5096,9 +5104,8 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st, setti
                      fastforward_ratio_default;
 
    if (fastforward_ratio_current != fastforward_ratio_last)
-         runloop_st->frame_limit_minimum_time = 
-            runloop_set_frame_limit(&video_st->av_info,
-                  fastforward_ratio_current);
+      runloop_set_frame_limit(&video_st->av_info,
+            fastforward_ratio_current);
 }
 
 
@@ -5349,7 +5356,7 @@ static bool event_init_content(
    if (!cheevos_enable || !cheevos_hardcore_mode_enable)
 #endif
    {
-      if (runloop_st->entry_state_slot && !command_event_load_entry_state())
+      if (runloop_st->entry_state_slot && !command_event_load_entry_state(settings))
          runloop_st->entry_state_slot = 0;
       if (!runloop_st->entry_state_slot && settings->bools.savestate_auto_load)
          command_event_load_auto_state();
@@ -5404,14 +5411,17 @@ static void runloop_runtime_log_init(runloop_state_t *runloop_st)
             sizeof(runloop_st->runtime_core_path));
 }
 
-float runloop_set_frame_limit(
+void runloop_set_frame_limit(
       const struct retro_system_av_info *av_info,
       float fastforward_ratio)
 {
+   runloop_state_t *runloop_st  = &runloop_state;
    if (fastforward_ratio < 1.0f)
-      return 0.0f;
-   return (retro_time_t)roundf(1000000.0f / 
-         (av_info->timing.fps * fastforward_ratio));
+      runloop_st->frame_limit_minimum_time = 0.0f;
+   else
+      runloop_st->frame_limit_minimum_time = (retro_time_t)
+         roundf(1000000.0f / 
+               (av_info->timing.fps * fastforward_ratio));
 }
 
 float runloop_get_fastforward_ratio(
@@ -5606,7 +5616,9 @@ static bool runloop_event_load_core(runloop_state_t *runloop_st,
 bool runloop_event_init_core(
       settings_t *settings,
       void *input_data,
-      enum rarch_core_type type)
+      enum rarch_core_type type,
+      const char *old_savefile_dir,
+      const char *old_savestate_dir)
 {
    size_t len;
    runloop_state_t *runloop_st     = &runloop_state;
@@ -5743,7 +5755,7 @@ bool runloop_event_init_core(
 #endif
 
    /* Per-core saves: reset redirection paths */
-   retroarch_path_set_redirect(settings);
+   runloop_path_set_redirect(settings, old_savefile_dir, old_savestate_dir);
 
    video_driver_set_cached_frame_ptr(NULL);
 
@@ -5769,9 +5781,7 @@ bool runloop_event_init_core(
    if (!runloop_event_load_core(runloop_st, poll_type_behavior))
       return false;
 
-   runloop_st->frame_limit_minimum_time = 
-     runloop_set_frame_limit(&video_st->av_info,
-           fastforward_ratio);
+   runloop_set_frame_limit(&video_st->av_info, fastforward_ratio);
    runloop_st->frame_limit_last_time    = cpu_features_get_time_usec();
 
    runloop_runtime_log_init(runloop_st);
@@ -6637,6 +6647,9 @@ static enum runloop_state_enum runloop_check_state(
          last_width  = video_driver_width;
          last_height = video_driver_height;
       }
+
+      /* Check if we have pressed the OSK toggle button */
+      HOTKEY_CHECK(RARCH_OSK, CMD_EVENT_OSK_TOGGLE, true, NULL);
    }
 #endif
 
@@ -6844,9 +6857,9 @@ static enum runloop_state_enum runloop_check_state(
 #endif
       {
          if (pause_nonactive)
-            focused = is_focused && !uico_st->is_on_foreground;
+            focused = is_focused && (!(uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND));
          else
-            focused = !uico_st->is_on_foreground;
+            focused = (!(uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND));
       }
 
       if (action == old_action)
@@ -6972,7 +6985,7 @@ static enum runloop_state_enum runloop_check_state(
                         menu->userdata,
                         menu->menu_state_msg);
 
-               if (uico_st->is_on_foreground)
+               if (uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND)
                {
                   if (     uico_st->drv
                         && uico_st->drv->render_messagebox)
@@ -7150,9 +7163,6 @@ static enum runloop_state_enum runloop_check_state(
    HOTKEY_CHECK(RARCH_SCREENSHOT, CMD_EVENT_TAKE_SCREENSHOT, true, NULL);
 #endif
 
-   /* Check if we have pressed the OSK toggle button */
-   HOTKEY_CHECK(RARCH_OSK, CMD_EVENT_OSK_TOGGLE, true, NULL);
-
    /* Check if we have pressed the recording toggle button */
    HOTKEY_CHECK(RARCH_RECORDING_TOGGLE, CMD_EVENT_RECORDING_TOGGLE, true, NULL);
 
@@ -7183,7 +7193,7 @@ static enum runloop_state_enum runloop_check_state(
       bool pause_pressed            = BIT256_GET(current_bits, RARCH_PAUSE_TOGGLE);
 
       /* Allow unpausing with Start */
-      if (runloop_paused)
+      if (runloop_paused && settings->bools.pause_on_disconnect)
          pause_pressed             |= BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_START);
 
 #ifdef HAVE_CHEEVOS
@@ -7331,6 +7341,7 @@ static enum runloop_state_enum runloop_check_state(
          {
             input_st->flags                     |=  INP_FLAG_NONBLOCKING;
             runloop_st->flags                   |=  RUNLOOP_FLAG_FASTMOTION;
+            command_event(CMD_EVENT_SET_FRAME_LIMIT, NULL);
          }
 
          driver_set_nonblock_state();
@@ -7619,9 +7630,9 @@ static enum runloop_state_enum runloop_check_state(
             runloop_st->shader_delay_timer.timeout_end = 0;
 
             {
-               const char *preset          = retroarch_get_shader_preset();
+               const char *preset          = video_shader_get_current_shader_preset();
                enum rarch_shader_type type = video_shader_parse_type(preset);
-               apply_shader(settings, type, preset, false);
+               video_shader_apply_shader(settings, type, preset, false);
             }
          }
       }
@@ -7774,7 +7785,7 @@ int runloop_iterate(void)
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
 #if defined(HAVE_COCOATOUCH)
-         if (!uico_st->is_on_foreground)
+         if (!(uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
 #endif
             retro_sleep(10);
          return 1;
@@ -7890,50 +7901,66 @@ int runloop_iterate(void)
       }
    }
 
-   if (!(input_st->flags & INP_FLAG_NONBLOCKING))
+   /* Frame delay */
+   if (     !(input_st->flags & INP_FLAG_NONBLOCKING)
+         || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
    {
+      bool skip_delay = core_paused
+            || (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
+            || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION);
+
       if (settings->bools.video_frame_delay_auto)
       {
-         static bool slowmotion_prev  = false;
-         static unsigned skip_frames  = 0;
-         float refresh_rate           = settings->floats.video_refresh_rate;
-         unsigned video_swap_interval = runloop_get_video_swap_interval(
+         float refresh_rate          = settings->floats.video_refresh_rate;
+         uint8_t video_swap_interval = runloop_get_video_swap_interval(
                settings->uints.video_swap_interval);
-         unsigned video_bfi           = settings->uints.video_black_frame_insertion;
-         unsigned frame_time_interval = 8;
-         bool frame_time_update       =
-               /* Skip some starting frames for stabilization */
+         uint8_t video_bfi           = settings->uints.video_black_frame_insertion;
+         uint8_t frame_time_interval = 8;
+         static uint8_t skip_update  = 0;
+         static bool skip_delay_prev = false;
+         bool frame_time_update      =
+               /* Skip some initial frames for stabilization */
                video_st->frame_count > frame_time_interval &&
+               /* Only update when there are enough frames for averaging */
                video_st->frame_count % frame_time_interval == 0;
 
-         /* A few frames need to get ignored after slowmotion is disabled */
-         if (!(runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION) && slowmotion_prev)
-            skip_frames = frame_time_interval * 2;
+         /* A few frames must be ignored after slow+fastmotion/pause
+          * is disabled or geometry change is triggered */
+         if (     (!skip_delay && skip_delay_prev)
+               || video_st->frame_delay_pause)
+         {
+            skip_update = frame_time_interval * 4;
+            video_st->frame_delay_pause = false;
+         }
 
-         if (skip_frames)
-            skip_frames--;
+         if (skip_update)
+            skip_update--;
 
-         slowmotion_prev = runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION;
-         /* Always skip when slowmotion is active */
-         if (slowmotion_prev)
-            skip_frames = 1;
+         skip_delay_prev = skip_delay;
 
-         if (skip_frames)
+         /* Always skip when slow+fastmotion/pause is active */
+         if (skip_delay_prev)
+            skip_update = 1;
+
+         if (skip_update)
             frame_time_update = false;
 
          /* Black frame insertion + swap interval multiplier */
          refresh_rate = (refresh_rate / (video_bfi + 1.0f) / video_swap_interval);
 
-         /* Set target moderately as half frame time with 0 delay */
+         /* Set target moderately as half frame time with 0 (Auto) delay */
          if (video_frame_delay == 0)
             video_frame_delay = 1 / refresh_rate * 1000 / 2;
 
+         /* Reset new desired delay target */
          if (video_st->frame_delay_target != video_frame_delay)
          {
+            frame_time_update = false;
             video_st->frame_delay_target = video_frame_delay_effective = video_frame_delay;
             RARCH_LOG("[Video]: Frame delay reset to %d ms.\n", video_frame_delay);
          }
 
+         /* Decide what should happen to effective delay */
          if (video_frame_delay_effective > 0 && frame_time_update)
          {
             video_frame_delay_auto_t vfda = {0};
@@ -7941,11 +7968,11 @@ int runloop_iterate(void)
             vfda.refresh_rate             = refresh_rate;
 
             video_frame_delay_auto(video_st, &vfda);
-            if (vfda.decrease > 0)
+            if (vfda.delay_decrease > 0)
             {
-               video_frame_delay_effective -= vfda.decrease;
-               RARCH_LOG("[Video]: Frame delay decrease by %d ms to %d ms due to frame time: %d > %d.\n",
-                     vfda.decrease, video_frame_delay_effective, vfda.time, vfda.target);
+               video_frame_delay_effective -= vfda.delay_decrease;
+               RARCH_LOG("[Video]: Frame delay decrease by %d ms to %d ms due to frame time average: %d > %d.\n",
+                     vfda.delay_decrease, video_frame_delay_effective, vfda.frame_time_average, vfda.frame_time_target);
             }
          }
       }
@@ -7954,7 +7981,8 @@ int runloop_iterate(void)
 
       video_st->frame_delay_effective = video_frame_delay_effective;
 
-      if (video_frame_delay_effective > 0)
+      /* Never apply frame delay when slow+fastmotion/pause is active */
+      if (video_frame_delay_effective > 0 && !skip_delay)
          retro_sleep(video_frame_delay_effective);
    }
 
@@ -8072,14 +8100,12 @@ end:
       }
 
       if (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
-         runloop_st->frame_limit_minimum_time = 
-            runloop_set_frame_limit(&video_st->av_info,
-                  runloop_get_fastforward_ratio(settings,
-                     &runloop_st->fastmotion_override.current));
+         runloop_set_frame_limit(&video_st->av_info,
+               runloop_get_fastforward_ratio(settings,
+                  &runloop_st->fastmotion_override.current));
       else
-         runloop_st->frame_limit_minimum_time = 
-            runloop_set_frame_limit(&video_st->av_info,
-                  1.0f);
+         runloop_set_frame_limit(&video_st->av_info,
+               1.0f);
    }
 
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
@@ -8102,7 +8128,7 @@ end:
          if (sleep_ms > 0)
          {
 #if defined(HAVE_COCOATOUCH)
-            if (!uico_state_get_ptr()->is_on_foreground)
+            if (!(uico_state_get_ptr()->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
 #endif
                retro_sleep(sleep_ms);
          }
@@ -8199,7 +8225,7 @@ void runloop_task_msg_queue_push(
       runloop_msg_queue_push(msg, prio, duration, flush, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 
-bool retroarch_get_current_savestate_path(char *path, size_t len)
+bool runloop_get_current_savestate_path(char *path, size_t len)
 {
    runloop_state_t *runloop_st = &runloop_state;
    settings_t *settings        = config_get_ptr();
@@ -8223,7 +8249,7 @@ bool retroarch_get_current_savestate_path(char *path, size_t len)
    return true;
 }
 
-bool retroarch_get_entry_state_path(char *path, size_t len, unsigned slot)
+bool runloop_get_entry_state_path(char *path, size_t len, unsigned slot)
 {
    size_t _len;
    runloop_state_t *runloop_st = &runloop_state;
@@ -8472,7 +8498,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
        * core is actually running; register that any
        * changes to global remap-related parameters
        * should be reset once core is deinitialised */
-      input_remapping_enable_global_config_restore();
+      input_state_get_ptr()->flags   |=  INP_FLAG_REMAPPING_CACHE_ACTIVE;
       runloop_st->current_core.flags |=  RETRO_CORE_FLAG_GAME_LOADED;
       return true;
    }
@@ -8721,4 +8747,280 @@ void runloop_path_set_names(void)
       runloop_st->name.cheatfile[len+4] = '\0';
    }
 #endif
+}
+
+void runloop_path_set_redirect(settings_t *settings,
+      const char *old_savefile_dir,
+      const char *old_savestate_dir)
+{
+   char content_dir_name[PATH_MAX_LENGTH];
+   char new_savefile_dir[PATH_MAX_LENGTH];
+   char new_savestate_dir[PATH_MAX_LENGTH];
+   runloop_state_t *runloop_st                 = &runloop_state;
+   struct retro_system_info *system            = &runloop_st->system.info;
+   bool sort_savefiles_enable                  = settings->bools.sort_savefiles_enable;
+   bool sort_savefiles_by_content_enable       = settings->bools.sort_savefiles_by_content_enable;
+   bool sort_savestates_enable                 = settings->bools.sort_savestates_enable;
+   bool sort_savestates_by_content_enable      = settings->bools.sort_savestates_by_content_enable;
+   bool savefiles_in_content_dir               = settings->bools.savefiles_in_content_dir;
+   bool savestates_in_content_dir              = settings->bools.savestates_in_content_dir;
+
+   content_dir_name[0]  = '\0';
+
+   /* Initialize current save directories
+    * with the values from the config. */
+   strlcpy(new_savefile_dir,  old_savefile_dir,  sizeof(new_savefile_dir));
+   strlcpy(new_savestate_dir, old_savestate_dir, sizeof(new_savestate_dir));
+
+   /* Get content directory name, if per-content-directory
+    * saves/states are enabled */
+   if ((sort_savefiles_by_content_enable ||
+         sort_savestates_by_content_enable) &&
+       !string_is_empty(runloop_st->runtime_content_path_basename))
+      fill_pathname_parent_dir_name(content_dir_name,
+            runloop_st->runtime_content_path_basename,
+            sizeof(content_dir_name));
+
+   if (system && !string_is_empty(system->library_name))
+   {
+#ifdef HAVE_MENU
+      if (!string_is_equal(system->library_name,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
+#endif
+      {
+         /* Per-core and/or per-content-directory saves */
+         if ((sort_savefiles_enable || sort_savefiles_by_content_enable)
+               && !string_is_empty(old_savefile_dir))
+         {
+            /* Append content directory name to save location */
+            if (sort_savefiles_by_content_enable)
+               fill_pathname_join_special(
+                     new_savefile_dir,
+                     old_savefile_dir,
+                     content_dir_name,
+                     sizeof(new_savefile_dir));
+
+            /* Append library_name to the save location */
+            if (sort_savefiles_enable)
+               fill_pathname_join(
+                     new_savefile_dir,
+                     new_savefile_dir,
+                     system->library_name,
+                     sizeof(new_savefile_dir));
+
+            /* If path doesn't exist, try to create it,
+             * if everything fails revert to the original path. */
+            if (!path_is_directory(new_savefile_dir))
+               if (!path_mkdir(new_savefile_dir))
+               {
+                  RARCH_LOG("%s %s\n",
+                        msg_hash_to_str(MSG_REVERTING_SAVEFILE_DIRECTORY_TO),
+                        old_savefile_dir);
+
+                  strlcpy(new_savefile_dir, old_savefile_dir, sizeof(new_savefile_dir));
+               }
+         }
+
+         /* Per-core and/or per-content-directory savestates */
+         if ((sort_savestates_enable || sort_savestates_by_content_enable)
+               && !string_is_empty(old_savestate_dir))
+         {
+            /* Append content directory name to savestate location */
+            if (sort_savestates_by_content_enable)
+               fill_pathname_join_special(
+                     new_savestate_dir,
+                     old_savestate_dir,
+                     content_dir_name,
+                     sizeof(new_savestate_dir));
+
+            /* Append library_name to the savestate location */
+            if (sort_savestates_enable)
+            {
+               fill_pathname_join(
+                     new_savestate_dir,
+                     new_savestate_dir,
+                     system->library_name,
+                     sizeof(new_savestate_dir));
+            }
+
+            /* If path doesn't exist, try to create it.
+             * If everything fails, revert to the original path. */
+            if (!path_is_directory(new_savestate_dir))
+               if (!path_mkdir(new_savestate_dir))
+               {
+                  RARCH_LOG("%s %s\n",
+                        msg_hash_to_str(MSG_REVERTING_SAVESTATE_DIRECTORY_TO),
+                        old_savestate_dir);
+                  strlcpy(new_savestate_dir,
+                        old_savestate_dir,
+                        sizeof(new_savestate_dir));
+               }
+         }
+      }
+   }
+
+   /* Set savefile directory if empty to content directory */
+   if (string_is_empty(new_savefile_dir) || savefiles_in_content_dir)
+   {
+      strlcpy(new_savefile_dir,
+            runloop_st->runtime_content_path_basename,
+            sizeof(new_savefile_dir));
+      path_basedir(new_savefile_dir);
+
+      if (string_is_empty(new_savefile_dir))
+         RARCH_LOG("Cannot resolve save file path.\n");
+      else if (sort_savefiles_enable || sort_savefiles_by_content_enable)
+         RARCH_LOG("Saving files in content directory is set. This overrides other save file directory settings.\n");
+   }
+
+   /* Set savestate directory if empty based on content directory */
+   if (string_is_empty(new_savestate_dir) || savestates_in_content_dir)
+   {
+      strlcpy(new_savestate_dir,
+            runloop_st->runtime_content_path_basename,
+            sizeof(new_savestate_dir));
+      path_basedir(new_savestate_dir);
+
+      if (string_is_empty(new_savestate_dir))
+         RARCH_LOG("Cannot resolve save state file path.\n");
+      else if (sort_savestates_enable || sort_savestates_by_content_enable)
+         RARCH_LOG("Saving save states in content directory is set. This overrides other save state file directory settings.\n");
+   }
+
+#ifdef HAVE_NETWORKING
+   /* Special save directory for netplay clients. */
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
+         !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
+   {
+      fill_pathname_join(new_savefile_dir, new_savefile_dir, ".netplay",
+         sizeof(new_savefile_dir));
+
+      if (!path_is_directory(new_savefile_dir) &&
+            !path_mkdir(new_savefile_dir))
+         path_basedir(new_savefile_dir);
+   }
+#endif
+
+   if (system && !string_is_empty(system->library_name))
+   {
+      bool savefile_is_dir  = path_is_directory(new_savefile_dir);
+      bool savestate_is_dir = path_is_directory(new_savestate_dir);
+      if (savefile_is_dir)
+         strlcpy(runloop_st->name.savefile, new_savefile_dir,
+               sizeof(runloop_st->name.savefile));
+      else
+         savefile_is_dir    = path_is_directory(runloop_st->name.savefile);
+
+      if (savestate_is_dir)
+         strlcpy(runloop_st->name.savestate, new_savestate_dir,
+               sizeof(runloop_st->name.savestate));
+      else
+         savestate_is_dir   = path_is_directory(runloop_st->name.savestate);
+
+      if (savefile_is_dir)
+      {
+         fill_pathname_dir(runloop_st->name.savefile,
+               !string_is_empty(runloop_st->runtime_content_path_basename)
+               ? runloop_st->runtime_content_path_basename
+               : system->library_name,
+               FILE_PATH_SRM_EXTENSION,
+               sizeof(runloop_st->name.savefile));
+         RARCH_LOG("[Overrides]: %s \"%s\".\n",
+               msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
+               runloop_st->name.savefile);
+      }
+
+      if (savestate_is_dir)
+      {
+         fill_pathname_dir(runloop_st->name.savestate,
+               !string_is_empty(runloop_st->runtime_content_path_basename)
+               ? runloop_st->runtime_content_path_basename
+               : system->library_name,
+               FILE_PATH_STATE_EXTENSION,
+               sizeof(runloop_st->name.savestate));
+         RARCH_LOG("[Overrides]: %s \"%s\".\n",
+               msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
+               runloop_st->name.savestate);
+      }
+
+#ifdef HAVE_CHEATS
+      if (path_is_directory(runloop_st->name.cheatfile))
+      {
+         fill_pathname_dir(runloop_st->name.cheatfile,
+               !string_is_empty(runloop_st->runtime_content_path_basename)
+               ? runloop_st->runtime_content_path_basename
+               : system->library_name,
+               FILE_PATH_CHT_EXTENSION,
+               sizeof(runloop_st->name.cheatfile));
+         RARCH_LOG("[Overrides]: %s \"%s\".\n",
+               msg_hash_to_str(MSG_REDIRECTING_CHEATFILE_TO),
+               runloop_st->name.cheatfile);
+      }
+#endif
+   }
+
+   dir_set(RARCH_DIR_CURRENT_SAVEFILE,  new_savefile_dir);
+   dir_set(RARCH_DIR_CURRENT_SAVESTATE, new_savestate_dir);
+}
+
+void runloop_path_deinit_subsystem(void)
+{
+   runloop_state_t *runloop_st  = &runloop_state;
+   if (runloop_st->subsystem_fullpaths)
+      string_list_free(runloop_st->subsystem_fullpaths);
+   runloop_st->subsystem_fullpaths = NULL;
+}
+
+void runloop_path_set_special(char **argv, unsigned num_content)
+{
+   unsigned i;
+   char str[PATH_MAX_LENGTH];
+   union string_list_elem_attr attr;
+   bool is_dir                         = false;
+   struct string_list subsystem_paths  = {0};
+   runloop_state_t         *runloop_st = &runloop_state;
+   const char *savestate_dir           = runloop_st->savestate_dir;
+
+   /* First content file is the significant one. */
+   runloop_path_set_basename(argv[0]);
+
+   string_list_initialize(&subsystem_paths);
+
+   runloop_st->subsystem_fullpaths     = string_list_new();
+   retro_assert(runloop_st->subsystem_fullpaths);
+
+   attr.i = 0;
+
+   for (i = 0; i < num_content; i++)
+   {
+      string_list_append(runloop_st->subsystem_fullpaths, argv[i], attr);
+      strlcpy(str, argv[i], sizeof(str));
+      path_remove_extension(str);
+      string_list_append(&subsystem_paths, path_basename(str), attr);
+   }
+
+   str[0] = '\0';
+   string_list_join_concat(str, sizeof(str), &subsystem_paths, " + ");
+   string_list_deinitialize(&subsystem_paths);
+
+   /* We defer SRAM path updates until we can resolve it.
+    * It is more complicated for special content types. */
+   is_dir = path_is_directory(savestate_dir);
+
+   if (is_dir)
+      strlcpy(runloop_st->name.savestate, savestate_dir,
+            sizeof(runloop_st->name.savestate)); /* TODO/FIXME - why are we setting this string here but then later overwriting it later with fil_pathname_dir? */
+   else
+      is_dir   = path_is_directory(runloop_st->name.savestate);
+
+   if (is_dir)
+   {
+      fill_pathname_dir(runloop_st->name.savestate,
+            str,
+            ".state",
+            sizeof(runloop_st->name.savestate));
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
+            runloop_st->name.savestate);
+   }
 }

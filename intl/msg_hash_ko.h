@@ -1040,20 +1040,32 @@ MSG_HASH(
    "환경설정 불러오기"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "기본 설정으로 되돌리기"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   "현재 설정을 기본 설정으로 되돌립니다."
+   MENU_ENUM_SUBLABEL_CONFIGURATIONS,
+   "저장된 설정을 불러와서 현재 값을 교체합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "현재 환경설정 저장"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
+   "현재 설정 파일을 덮어씌웁니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "새 환경설정 저장"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
+   "현재 설정을 별도의 파일로 저장합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   "기본 설정으로 되돌리기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   "현재 설정을 기본 설정으로 되돌립니다."
    )
 
 /* Main Menu > Help */
@@ -1507,10 +1519,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "이중선형 필터링"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   "픽셀 가장자리의 날카로운 부분을 줄이기 위해 이미지에 약간의 흐림 효과를 추가합니다. 이 옵션은 성능에 거의 영향을 주지 않습니다."
-   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
@@ -1913,6 +1921,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
    "화면비를 나타내는 실수 값(너비/높이)입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
+   "환경설정"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_SQUARE_PIXEL,
+   "1:1 픽셀비 (%u:%u 화면비)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CORE_PROVIDED,
+   "코어에 따름"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
+   "사용자"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
+   "모두"
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -2321,6 +2349,10 @@ MSG_HASH(
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_MIXER_STREAM,
+   "믹서 스트림 #%d: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
    "재생"
    )
@@ -2367,6 +2399,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
    "오디오 스트림의 볼륨을 설정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
+   "상태 : 사용불가"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
+   "상태 : 정지됨"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
+   "상태 : 재생 중"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
+   "상태 : 재생 중 (반복)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
+   "상태 : 재생 중 (순차)"
    )
 
 /* Settings > Audio > Menu Sounds */
@@ -2440,6 +2492,8 @@ MSG_HASH(
    "윈도우 키와 함께 입력되는 핫키들을 비활성화합니다."
    )
 #endif
+#ifdef ANDROID
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "보조 센서 입력"
@@ -2479,10 +2533,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
    "컨트롤러 연결 해제 시 컨텐츠 일시정지"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "아무 컨트롤러나 연결 해제될 경우 컨텐츠를 일시정지합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
@@ -2547,6 +2597,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
    "터보 모드의 작동 방식을 설정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
+   "클래식"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
+   "단일 버튼 (켜기/끄기)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "단일 버튼 (홀드)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
@@ -2690,16 +2752,36 @@ MSG_HASH(
    "핫키 사용"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
+   "할당된 경우, 다른 모든 핫키는 '핫키 사용' 키를 누른 채로 입력해야 합니다. 일반 입력에 영향을 끼치지 않으면서 컨트롤러 버튼을 핫키로 할당할 수 있게 합니다. '핫키 사용' 키를 컨트롤러에만 할당할 경우 키보드 핫키는 컨트롤러의 '핫키 사용' 키를 누르지 않아도 사용할 수 있으며, 컨트롤러와 키보드 모두 할당할 경우 두 장치의 '핫키 사용' 키는 두 장치 모두에 사용될 [...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
    "핫키 지연 시간 (프레임)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
+   "핫키를 눌렀을 때 일반 입력이 제한되기 전에 약간의 지연을 추가합니다. 핫키가 다른 동작(예: RetroPad '선택' 버튼)과 겹쳐서 매핑되어 있을 경우 해당 입력이 인식될 수 있게 합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   "메뉴 열기/닫기 (컨트롤러 버튼 조합)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "메뉴를 호출하는 버튼 조합입니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
+   "메뉴 열기/닫기"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
    "실행중인 컨텐츠와 메뉴 사이를 전환합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   "종료 (컨트롤러 버튼 조합)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
@@ -2716,6 +2798,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
    "컨텐츠 종료"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CLOSE_CONTENT_KEY,
+   "현재 컨텐츠를 종료합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
+   "컨텐츠 다시 시작"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RESET,
@@ -2758,10 +2848,30 @@ MSG_HASH(
    "뒤로 감기"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
+   "키를 누르고 있는 동안 현재 컨텐츠를 뒤로 되돌립니다. '뒤로 감기 사용'이 반드시 활성화 되어야합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
+   "일시정지"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
    "컨텐츠의 일시정지를 설정/해제합니다."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
+   "프레임 진행"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FRAMEADVANCE,
+   "일시정지 상태에서 컨텐츠를 한 프레임씩 진행합니다."
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
+   "오디오 음소거"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_MUTE,
    "음소거를 사용/해제합니다."
@@ -2788,18 +2898,38 @@ MSG_HASH(
    "상태 불러오기"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
+   "현재 선택된 슬롯에서 상태저장 파일을 불러옵니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
    "상태 저장"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
+   "현재 선택된 슬롯에 상태저장 파일을 기록합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
+   "다음 상태저장 슬롯"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
    "선택된 상태저장 슬롯 인덱스를 증가시킵니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
+   "이전 상태저장 슬롯"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
    "선택된 상태저장 슬롯 인덱스를 감소시킵니다."
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
+   "디스크 꺼내기/삽입하기"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
    "가상 디스크 트레이가 닫혀있으면 트레이를 열고 디스크를 제거하고, 반대의 경우 현재 선택된 디스크를 넣고 트레이를 닫습니다."
@@ -2809,10 +2939,22 @@ MSG_HASH(
    "다음 디스크"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
+   "다음 디스크를 선택합니다. 가상 디스크 트레이가 열려 있어야 합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "이전 디스크"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
+   "이전 디스크를 선택합니다. 가상 디스크 트레이가 열려 있어야 합니다."
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_TOGGLE,
+   "셰이더 (켜기/끄기)"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    "현재 선택된 셰이더를 활성화/비활성화합니다."
@@ -2905,6 +3047,10 @@ MSG_HASH(
    "게임 포커스 모드 (사용/해제)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
+   "'게임 포커스' 모드를 켜거나 끕니다. 게임 포커스 모드가 켜지면 핫키를 사용할 수 없게 되고(모든 키보드 입력이 코어로 전달되고) 마우스가 움직이지 않게 됩니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
    "전체화면 (켜기/끄기)"
    )
@@ -2974,7 +3120,15 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "AI 서비스"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
+   "현재 컨텐츠의 화면을 캡쳐해서 번역하거나 화면의 글자를 소리내어 읽습니다. 'AI 서비스'가 활성화되어 있고 그 설정이 완료되어 있어야 합니다."
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
+   "넷플레이 핑 (켜기/끄기)"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
    "현재 넷플레이 방의 핑 카운터 표시 여부를 켜거나 끕니다."
@@ -3028,12 +3182,16 @@ MSG_HASH(
    "장치 종류"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE,
+   "에뮬레이트할 컨트롤러의 종류를 지정합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
    "아날로그로 디지털 입력"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
-   "지정한 아날로그 스틱을 방향 패드 대신으로 사용합니다. 코어가 아날로그 입력을 지원하는 경우, 방향 패드 매핑은 (강제) 옵션을 선택하지 않은 한 비활성화됩니다. 방향 패드 매핑을 강제하면 코어는 지정한 스틱의 아날로그 입력을 받을 수 없게 됩니다."
+   "지정한 아날로그 스틱을 D-패드 입력에 사용합니다. '강제' 옵션을 사용하면 코어에 보낼 아날로그 입력을 D-패드 입력으로 덮어씁니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -3045,7 +3203,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
-   "프론트엔드의 %u번 포트의 입력을 받을 코어의 포트(일반적으로 플레이어 번호)를 지정합니다."
+   "프론트엔드의 %u번 포트 컨트롤러의 입력을 받을 코어의 포트를 지정합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -3605,6 +3763,22 @@ MSG_HASH(
    "코어의 로그 수준을 설정합니다. 코어에서 발생하는 설정값 이하 수준의 로그는 무시됩니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG,
+   "0 (디버그)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_INFO,
+   "1 (정보)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_WARNING,
+   "2 (경고)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_ERROR,
+   "3 (오류)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
    "파일에 로그 기록"
    )
@@ -3784,6 +3958,34 @@ MSG_HASH(
    "녹화 품질"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
+   "사용자"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY,
+   "낮음"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY,
+   "중간"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
+   "높음"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY,
+   "무손실"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST,
+   "WebM 고성능"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY,
+   "WebM 고화질"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
    "사용자 녹화 설정"
    )
@@ -3812,8 +4014,32 @@ MSG_HASH(
    "스트리밍 모드"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
+   "로컬"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
+   "사용자"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
    "스트리밍 품질"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
+   "사용자"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
+   "낮음"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
+   "중간"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
+   "높음"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
@@ -4375,16 +4601,8 @@ MSG_HASH(
    "OSD 알림 X 위치"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
-   "OSD 문자 위치를 위한 사용자 X 좌표를 지정합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    "OSD 알림 Y 위치"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
-   "OSD 문자 위치를 위한 사용자 Y 좌표를 지정합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
@@ -5550,14 +5768,6 @@ MSG_HASH(
    "도전과제 달성시 소리를 재생합니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
-   "세부정보 표시 모드"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
-   "알림에 좀 더 자세한 정보를 표시합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
    "자동 스크린샷 저장"
    )
@@ -5573,14 +5783,76 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
    "모든 도전과제를 활성화하고 세션을 시작합니다. (이전에 달성한 과제도 다시 활성화됨)"
    )
+
+/* Settings > Achievements > Appearance */
+
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
-   "도전 알림"
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
+   "메뉴"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
-   "도전 과제를 달성할 수 있을 때 화면에 알림 아이콘을 표시합니다."
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_SETTINGS,
+   "OSD 도전과제 알림의 위치와 오프셋을 변경합니다."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR,
+   "위치"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_ANCHOR,
+   "도전과제 알람이 표시될 화면상 위치를 설정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT,
+   "좌측 상단"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER,
+   "상단 중앙"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPRIGHT,
+   "우측 상단"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMLEFT,
+   "좌측 하단"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER,
+   "하단 중앙"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMRIGHT,
+   "우측 하단"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_AUTO,
+   "일관된 패딩 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_AUTO,
+   "도전과제 알림이 다른 종류의 OSD 알림과 같은 크기의 패딩을 사용할 지 설정합니다. 수동으로 패딩과 위치를 정하려면 비활성화해야 합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_H,
+   "수동 가로 패딩"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   "화면의 왼쪽/오른쪽 테두리에서의 거리입니다. 화면 오버스캔이 있을 경우 보정할 수 있습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_V,
+   "수동 세로 패딩"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_V,
+   "화면의 위쪽/아래쪽 테두리에서의 거리입니다. 화면 오버스캔이 있을 경우 보정할 수 있습니다."
+   )
+
+/* Settings > Achievements > Visibility */
+
 
 /* Settings > Network */
 
@@ -7825,6 +8097,22 @@ MSG_HASH(
    "셰이더 프리셋을 불러옵니다. 셰이더 파이프라인이 자동으로 설정됩니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
+   "앞에 불러오기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
+   "현재 로드된 프리셋의 앞에 붙여넣기"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
+   "뒤에 불러오기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
+   "현재 로드된 프리셋의 뒤에 붙여넣기"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
    "저장"
    )
@@ -8170,6 +8458,38 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SELECT_FILE,
    "파일 선택"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_NORMAL,
+   "보통"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_90_DEG,
+   "90도"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_180_DEG,
+   "180도"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_270_DEG,
+   "270도"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL,
+   "보통"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL,
+   "90도"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
+   "180도"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
+   "270도"
    )
 
 /* Settings Options */
@@ -8871,7 +9191,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
-   "스위치 아이콘 표시"
+   "스위치 아이콘"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
@@ -9194,6 +9514,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "다른 아이콘 테마 선택. 변경 내용은 프로그램을 다시 시작 후 적용됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
+   "스위치 아이콘"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_SWITCH_ICONS,
+   "메뉴 설정 항목에서 '켬/끔' 글자 표기 대신에 아이콘을 사용합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
@@ -9539,6 +9867,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
    "메뉴 항목의 왼쪽에 아이콘들을 표시합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_SWITCH_ICONS,
+   "스위치 아이콘"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
+   "메뉴 설정 항목에서 '켬/끔' 글자 표기 대신에 아이콘을 사용합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
@@ -10414,6 +10750,10 @@ MSG_HASH(
    "현재 컨텐츠의 서브시스템 설정에 접근합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
+   " 현재 컨텐츠: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
    "넷플레이 호스트 찾지 못함."
    )
@@ -10444,6 +10784,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
    "%d번 포트 디바이스명: %s (#%d)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
+   "장치 표시명: %s\n장치 설정명: %s\n장치 VID/PID: %d/%d"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
@@ -10519,6 +10863,14 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   "셰이더 프리셋"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
+   "셰이더 프리셋"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    "셰이더 프리셋"
    )
 MSG_HASH(
@@ -11399,10 +11751,6 @@ MSG_HASH(
    "자동 상태 저장 to"
    )
 MSG_HASH(
-   MSG_BLOCKING_SRAM_OVERWRITE,
-   "SRAM 덮어쓰기 차단"
-   )
-MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    "포트에 명령줄 인터페이스 띄우기"
    )
@@ -12091,10 +12439,6 @@ MSG_HASH(
    "셰이더 프리셋 저장 성공."
    )
 MSG_HASH(
-   MSG_SKIPPING_SRAM_LOAD,
-   "SRAM 불러오기 건너뛰는 중."
-   )
-MSG_HASH(
    MSG_SLOW_MOTION,
    "슬로모션."
    )
@@ -12107,8 +12451,16 @@ MSG_HASH(
    "슬로모션 뒤로 감기."
    )
 MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "SRAM 불러오기 건너뛰는 중."
+   )
+MSG_HASH(
    MSG_SRAM_WILL_NOT_BE_SAVED,
    "SRAM이 저장되지 않을 것입니다."
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "SRAM 덮어쓰기 차단"
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,
@@ -12235,16 +12587,32 @@ MSG_HASH(
    "장치 설정됨, 포트"
    )
 MSG_HASH(
+   MSG_DEVICE_CONFIGURED_IN_PORT_NR,
+   "%s 설정됨, 포트 %u"
+   )
+MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT,
    "장치 연결 해제됨, 포트"
+   )
+MSG_HASH(
+   MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
+   "%s 연결 해제됨, 포트 %u"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
    "설정 안 됨"
    )
 MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_NR,
+   "%s (%u/%u) 설정 안 됨"
+   )
+MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
    "설정 안 됨, 기본값 사용"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
+   "%s (%u/%u) 설정 안 됨, 기본값 사용"
    )
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,

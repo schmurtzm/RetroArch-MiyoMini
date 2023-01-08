@@ -45,10 +45,6 @@ MSG_HASH(
    "استطلع"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "نواة مستقلة"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "استيراد مُحتوى"
    )
@@ -285,10 +281,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "تصفح جميع المحتويات المطابقة لقاعدة البيانات عبر واجهة بحث مصنفة."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "نواة مستقلة"
    )
 
 /* Main Menu > Online Updater */
@@ -948,20 +940,16 @@ MSG_HASH(
    "تحميل ملف التكوين"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "إعادة التعيين إلى الافتراضي"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   "إعادة تعيين التكوين الحالي إلى القيم الافتراضية."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "قراءة إعدادات التكوين الحالية"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "حفظ الإعدادات"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   "إعادة التعيين إلى الافتراضي"
    )
 
 /* Main Menu > Help */
@@ -1383,10 +1371,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "تصفية ثنائية الأسلوب"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   "يضيف ضباباً خفيفاً للصورة لتنعيم حواف البكسل الصلبة. هذا الخيار لا يؤثر إلا قليلاً على الأداء."
-   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
@@ -1665,6 +1649,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "نسبة الجانب"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
+   "الإعدادات"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
+   "مخصص"
    )
 #if defined(DINGUX)
 #endif
@@ -2063,6 +2055,8 @@ MSG_HASH(
    "إذا تم تمكين محاولات التهيئة التلقائية لوحدات التحكم ، نمط الإضافة واللعب."
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
+#ifdef ANDROID
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
@@ -3004,6 +2998,10 @@ MSG_HASH(
    "جودة التسجيل"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
+   "مخصص"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
    "تخصيص تكوين الحقول"
    )
@@ -3024,8 +3022,24 @@ MSG_HASH(
    "وضع البث"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_TWITCH,
+   "تويتش"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_YOUTUBE,
+   "يوتيوب"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
+   "مخصص"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
    "جودة البث"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
+   "مخصص"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
@@ -3343,16 +3357,8 @@ MSG_HASH(
    "موضع الإشعار (هوريزونتالي)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
-   "حدد موضع المحور X المخصص للنص على الشاشة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    "موضع الإشعار (رأسي)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
-   "حدد موضع المحور Y المخصص للنص على الشاشة."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
@@ -3682,17 +3688,19 @@ MSG_HASH(
    "استخدام منجزات غير رسمية و/أو ميزات بيتا لأغراض الاختبار."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
-   "وضع مفصل"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
-   "إظهار المزيد من المعلومات في الإشعارات."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
    "لقطة شاشة تلقائية"
    )
+
+/* Settings > Achievements > Appearance */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
+   "المظهر"
+   )
+
+/* Settings > Achievements > Visibility */
+
 
 /* Settings > Network */
 
@@ -4963,14 +4971,6 @@ MSG_HASH(
    "كود"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
-   "إضافة غش جديد بعد هذه الغش"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
-   "إضافة غش جديد قبل هذه"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,
    "نسخ هذه الغش بعد"
    )
@@ -5282,6 +5282,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SELECT_FILE,
    "حدد ملف"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_NORMAL,
+   "عادي"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL,
+   "عادي"
    )
 
 /* Settings Options */
@@ -7414,6 +7422,14 @@ MSG_HASH(
    "تصاريح الشريط"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
+   "تصاريح الشريط"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
+   "تصاريح الشريط"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
    "تصفح URL"
    )
@@ -8099,10 +8115,6 @@ MSG_HASH(
    "حفظ الحالة تلقائياً إلى"
    )
 MSG_HASH(
-   MSG_BLOCKING_SRAM_OVERWRITE,
-   "منع الكتابة فوق SRAM"
-   )
-MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    "رفع واجهة الأوامر على المنفذ"
    )
@@ -8719,10 +8731,6 @@ MSG_HASH(
    "تم حفظ الضبط المسبق للشاهد بنجاح."
    )
 MSG_HASH(
-   MSG_SKIPPING_SRAM_LOAD,
-   "تجنب فتح التخزينة الأصلية للعبة (SRAM)."
-   )
-MSG_HASH(
    MSG_SLOW_MOTION,
    "حركة بطيئة."
    )
@@ -8735,8 +8743,16 @@ MSG_HASH(
    "ترجيع بحركة بطيئة."
    )
 MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "تجنب فتح التخزينة الأصلية للعبة (SRAM)."
+   )
+MSG_HASH(
    MSG_SRAM_WILL_NOT_BE_SAVED,
    "لن تحفظ تخزينة اللعبة الأصلية (SRAM)."
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "منع الكتابة فوق SRAM"
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,

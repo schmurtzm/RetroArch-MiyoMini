@@ -41,10 +41,6 @@ MSG_HASH(
    "Jelajahi"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Inti Bentuk Mandiri"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Impor Konten"
    )
@@ -281,10 +277,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "Rambah semua konten yang sesuai dengan database lewat antarmuka pencarian konten tersortir"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Inti Bentuk Mandiri"
    )
 
 /* Main Menu > Online Updater */
@@ -976,20 +968,16 @@ MSG_HASH(
    "Muat Konfigurasi"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "Setel ulang ke Default"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   "Atur ulang konfigurasi saat ini ke nilai bawaan."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "Simpan Konfigurasi Saat Ini"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "Simpan Konfigurasi Baru"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   "Setel ulang ke Default"
    )
 
 /* Main Menu > Help */
@@ -1398,10 +1386,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Pemfilteran Bilinear"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   "Tambahkan sedikit kabur ke gambar untuk melembutkan tepi piksel keras. Opsi ini memiliki dampak yang sangat kecil pada kinerja."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -2224,6 +2208,8 @@ MSG_HASH(
    "Kombinasi tombil Win-key hanya tersedia di aplikasi."
    )
 #endif
+#ifdef ANDROID
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "Aktifkan Input Sensor Auxiliary"
@@ -2801,6 +2787,12 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
    "Secara berkala mengirim info permainan berkonteks ke situs web RetroAchievements. Tidak berpengaruh jika 'Mode Garis Keras' dinyalakan."
    )
+
+/* Settings > Achievements > Appearance */
+
+
+/* Settings > Achievements > Visibility */
+
 
 /* Settings > Network */
 

@@ -16,7 +16,11 @@
 
 #include <retro_assert.h>
 #include <dynamic/dylib.h>
+#include <lists/string_list.h>
 #include <string/stdstring.h>
+#include <retro_timers.h>
+#include <retro_assert.h>
+#include <retro_math.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -29,14 +33,12 @@
 #endif
 
 #include "vulkan_common.h"
-#include <retro_timers.h>
-#include "../../configuration.h"
 #include "../include/vulkan/vulkan.h"
-#include <retro_assert.h>
 #include "vksym.h"
 #include <libretro_vulkan.h>
-#include <retro_math.h>
-#include <lists/string_list.h>
+
+#include "../../verbosity.h"
+#include "../../configuration.h"
 
 #define VENDOR_ID_AMD 0x1002
 #define VENDOR_ID_NV 0x10DE
@@ -1547,7 +1549,6 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
 
 static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 {
-   bool use_device_ext;
    uint32_t queue_count;
    unsigned i;
    static const float one                  = 1.0f;
@@ -1731,7 +1732,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          return false;
       }
 
-      if (!(use_device_ext = vulkan_find_device_extensions(vk->context.gpu,
+      if (!(vulkan_find_device_extensions(vk->context.gpu,
               enabled_device_extensions, &enabled_device_extension_count,
               device_extensions, ARRAY_SIZE(device_extensions),
               optional_device_extensions,
@@ -1756,7 +1757,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          vk->context.device = cached_device_vk;
          cached_device_vk   = NULL;
 
-         video_driver_set_video_cache_context_ack();
+         video_state_get_ptr()->flags |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
          RARCH_LOG("[Vulkan]: Using cached Vulkan context.\n");
       }
       else if (vkCreateDevice(vk->context.gpu, &device_info,
@@ -2372,7 +2373,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             return false;
          break;
       case VULKAN_WSI_MVK_MACOS:
-#ifdef HAVE_COCOA
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
          {
             PFN_vkCreateMacOSSurfaceMVK create;
             if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateMacOSSurfaceMVK", create))

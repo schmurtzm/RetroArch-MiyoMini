@@ -48,9 +48,6 @@
 #include <libretro_vulkan.h>
 
 #include "../video_defines.h"
-#include "../../driver.h"
-#include "../../retroarch.h"
-#include "../../verbosity.h"
 #include "../font_driver.h"
 #include "../drivers_shader/shader_vulkan.h"
 #include "../include/vulkan/vulkan.h"
@@ -94,15 +91,15 @@ enum vulkan_wsi_type
 
 #ifdef VULKAN_HDR_SWAPCHAIN
 
-#ifndef ALIGN
+#ifndef VKALIGN
 #ifdef _MSC_VER
-#define ALIGN(x) __declspec(align(x))
+#define VKALIGN(x) __declspec(align(x))
 #else
-#define ALIGN(x) __attribute__((aligned(x)))
+#define VKALIGN(x) __attribute__((aligned(x)))
 #endif
 #endif
 
-typedef struct ALIGN(16)
+typedef struct VKALIGN(16)
 {
    math_matrix_4x4   mvp;
    float             contrast;         /* 2.0f    */
@@ -753,10 +750,11 @@ static INLINE unsigned vulkan_format_to_bpp(VkFormat format)
       case VK_FORMAT_R8_UNORM:
          return 1;
 
-      default:
-         RARCH_ERR("[Vulkan]: Unknown format.\n");
-         abort();
+      default: /* Unknown format */
+	 break;
    }
+
+   return 0;
 }
 
 struct vk_buffer vulkan_create_buffer(
