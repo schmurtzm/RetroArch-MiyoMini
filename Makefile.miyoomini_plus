@@ -115,7 +115,7 @@ HAVE_AUDIOMIXER = 1
 
 
 OS = Linux
-TARGET = retroarch
+TARGET = retroarch_miyoo354
 
 OBJ :=
 LINK := $(CXX)
