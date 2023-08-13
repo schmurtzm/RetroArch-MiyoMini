@@ -27,7 +27,6 @@
 #include <AppKit/NSScreen.h>
 #endif
 
-#include <retro_assert.h>
 #include <retro_timers.h>
 #include <compat/apple_compat.h>
 #include <string/stdstring.h>
@@ -59,13 +58,11 @@ CocoaView *cocoaview_get(void);
 
 static uint32_t cocoa_vk_gfx_ctx_get_flags(void *data)
 {
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    uint32_t flags = 0;
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-   return flags;
-#else
-   return 0;
 #endif
+   return flags;
 }
 
 static void cocoa_vk_gfx_ctx_set_flags(void *data, uint32_t flags) { }
@@ -87,7 +84,10 @@ static void cocoa_vk_gfx_ctx_destroy(void *data)
 
 static enum gfx_ctx_api cocoa_vk_gfx_ctx_get_api(void *data) { return GFX_CTX_VULKAN_API; }
 
-static bool cocoa_vk_gfx_ctx_suppress_screensaver(void *data, bool enable) { return false; }
+static bool cocoa_vk_gfx_ctx_suppress_screensaver(void *data, bool disable)
+{
+    return [apple_platform setDisableDisplaySleep:disable];
+}
 
 static void cocoa_vk_gfx_ctx_input_driver(void *data,
       const char *name,
@@ -126,6 +126,16 @@ static void cocoa_vk_gfx_ctx_get_video_size(void *data,
    *width                          = CGRectGetWidth(size);
    *height                         = CGRectGetHeight(size);
 }
+#else
+static void cocoa_vk_gfx_ctx_get_video_size(void *data,
+      unsigned* width, unsigned* height)
+{
+    float screenscale               = cocoa_screen_get_native_scale();
+    MTKView *g_view                 = apple_platform.renderView;
+    CGRect size                     = g_view.bounds;
+    *width                          = CGRectGetWidth(size)  * screenscale;
+    *height                         = CGRectGetHeight(size) * screenscale;
+}
 #endif
 
 static gfx_ctx_proc_t cocoa_vk_gfx_ctx_get_proc_address(const char *symbol_name)
@@ -162,14 +172,14 @@ static void cocoa_vk_gfx_ctx_check_window(void *data, bool *quit,
 
 static void cocoa_vk_gfx_ctx_swap_interval(void *data, int i)
 {
-   unsigned interval           = (unsigned)i;
+   unsigned interval              = (unsigned)i;
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
 
    if (cocoa_ctx->swap_interval != interval)
    {
-      cocoa_ctx->swap_interval = interval;
+      cocoa_ctx->swap_interval    = interval;
       if (cocoa_ctx->vk.swapchain)
-         cocoa_ctx->vk.flags  |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
+         cocoa_ctx->vk.flags     |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    }
 }
 
@@ -185,9 +195,7 @@ static void cocoa_vk_gfx_ctx_swap_buffers(void *data)
          retro_sleep(10);
       }
       else
-      {
          vulkan_present(&cocoa_ctx->vk, cocoa_ctx->vk.context.current_swapchain_index);
-      }
    }
    vulkan_acquire_next_image(&cocoa_ctx->vk);
 }
@@ -211,16 +219,17 @@ static void *cocoa_vk_gfx_ctx_get_context_data(void *data)
 static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
       unsigned width, unsigned height, bool fullscreen)
 {
+   gfx_ctx_mode_t mode;
 #if defined(HAVE_COCOA_METAL)
-   NSView *g_view              = apple_platform.renderView;
+   NSView *g_view                 = apple_platform.renderView;
 #elif defined(HAVE_COCOA)
-   CocoaView *g_view           = (CocoaView*)nsview_get_ptr();
+   CocoaView *g_view              = (CocoaView*)nsview_get_ptr();
 #endif
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
    static bool 
-      has_went_fullscreen      = false;
-   cocoa_ctx->width            = width;
-   cocoa_ctx->height           = height;
+      has_went_fullscreen         = false;
+   cocoa_ctx->width               = width;
+   cocoa_ctx->height              = height;
 
    RARCH_LOG("[macOS]: Native window size: %u x %u.\n",
          cocoa_ctx->width, cocoa_ctx->height);
@@ -238,15 +247,13 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
       return false;
    }
 
-   gfx_ctx_mode_t mode = {
-      .width = width,
-      .height = height,
-      .fullscreen = fullscreen,
-   };
+   mode.width                     = width;
+   mode.height                    = height;
+   mode.fullscreen                = fullscreen;
    [apple_platform setVideoMode:mode];
    cocoa_show_mouse(data, !fullscreen);
 
-   has_went_fullscreen = fullscreen;
+   has_went_fullscreen            = fullscreen;
 
    return true;
 }
@@ -272,7 +279,22 @@ static void *cocoa_vk_gfx_ctx_init(void *video_driver)
 static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
       unsigned width, unsigned height, bool fullscreen)
 {
+   id g_view                      = apple_platform.renderView;
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
+   cocoa_ctx->width               = width;
+   cocoa_ctx->height              = height;
+
+   if (!vulkan_surface_create(&cocoa_ctx->vk,
+                              VULKAN_WSI_MVK_IOS,
+                              NULL,
+                              (BRIDGE void *)g_view,
+                              cocoa_ctx->width,
+                              cocoa_ctx->height,
+                              cocoa_ctx->swap_interval))
+   {
+      RARCH_ERR("[iOS Vulkan]: Failed to create surface.\n");
+      return false;
+   }
 
    /* TODO: Maybe iOS users should be able to 
     * show/hide the status bar here? */
@@ -287,6 +309,13 @@ static void *cocoa_vk_gfx_ctx_init(void *video_driver)
    if (!cocoa_ctx)
       return NULL;
 
+   [apple_platform setViewType:APPLE_VIEW_TYPE_VULKAN];
+   if (!vulkan_context_init(&cocoa_ctx->vk, VULKAN_WSI_MVK_IOS))
+   {
+      free(cocoa_ctx);
+      return NULL;
+   }
+
    return cocoa_ctx;
 }
 #endif
@@ -296,8 +325,8 @@ static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned width, unsigned hei
 {
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
 
-   cocoa_ctx->width  = width;
-   cocoa_ctx->height = height;
+   cocoa_ctx->width               = width;
+   cocoa_ctx->height              = height;
 
    if (!vulkan_create_swapchain(&cocoa_ctx->vk,
             width, height, cocoa_ctx->swap_interval))
@@ -306,12 +335,10 @@ static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned width, unsigned hei
       return false;
    }
 
-   cocoa_ctx->vk.context.flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
+   cocoa_ctx->vk.context.flags   |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
    if (cocoa_ctx->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
       vulkan_acquire_next_image(&cocoa_ctx->vk);
-
-   cocoa_ctx->vk.flags &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
-
+   cocoa_ctx->vk.flags           &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    return true;
 }
 #endif
@@ -335,7 +362,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    cocoa_get_metrics,
    NULL, /* translate_aspect */
 #ifdef OSX
-   cocoa_update_title,
+   video_driver_update_title,
 #else
    NULL, /* update_title */
 #endif

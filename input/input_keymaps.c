@@ -20,7 +20,6 @@
 #include <ctype.h>
 
 #include <compat/strl.h>
-#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 
 #ifdef HAVE_CONFIG_H
@@ -42,8 +41,13 @@
 #include <sys/keycodes.h>
 #endif
 
+#ifdef __PS3__
 #ifdef __PSL1GHT__
 #include <io/kb.h>
+#else
+#include <ps3_defines.h>
+#include <cell/keyboard.h>
+#endif
 #endif
 
 #if defined(HAVE_SDL) || defined(HAVE_SDL2)
@@ -1708,8 +1712,8 @@ const struct rarch_key_map rarch_key_map_dos[] = {
 };
 #endif
 
-#ifdef __PSL1GHT__
-const struct rarch_key_map rarch_key_map_psl1ght[] = {
+#if defined(__PS3__)
+const struct rarch_key_map rarch_key_map_ps3[] = {
    { KB_RAWKEY_A, RETROK_a },
    { KB_RAWKEY_B, RETROK_b },
    { KB_RAWKEY_C, RETROK_c },
@@ -2039,7 +2043,6 @@ void input_keymaps_translate_rk_to_str(enum retro_key key, char *buf, size_t siz
 {
    unsigned i;
 
-   retro_assert(size >= 2);
    *buf = '\0';
 
    if (key >= RETROK_a && key <= RETROK_z)
@@ -2057,4 +2060,107 @@ void input_keymaps_translate_rk_to_str(enum retro_key key, char *buf, size_t siz
       strlcpy(buf, input_config_key_map[i].str, size);
       break;
    }
+}
+
+/**
+ * input_translate_rk_to_ascii:
+ * @key : Retro key identifier
+ * @mod : retro_mod mask
+ *
+ * Translates a retro key identifier with mod mask to ASCII.
+ */
+uint8_t input_keymaps_translate_rk_to_ascii(enum retro_key key, enum retro_mod mod)
+{
+   if (     key > RETROK_KP_EQUALS
+         || (mod & (RETROKMOD_ALT | RETROKMOD_CTRL | RETROKMOD_META)))
+      return 0;
+
+   /* keypad */
+   if (key >= RETROK_KP0)
+   {
+      if (key == RETROK_KP_ENTER)
+         return 10;  /* \n */
+
+      if (mod & RETROKMOD_NUMLOCK)
+      {
+         switch (key)
+         {
+            case RETROK_KP_PERIOD:
+               return 46;  /* . */
+            case RETROK_KP_DIVIDE:
+               return 47;  /* / */
+            case RETROK_KP_MULTIPLY:
+               return 42;  /* * */
+            case RETROK_KP_MINUS:
+               return 45;  /* - */
+            case RETROK_KP_PLUS:
+               return 43;  /* + */
+            case RETROK_KP_EQUALS:
+               return 61;  /* = */
+            default:  /* KP 0 - 9 */
+               return key - 208;
+         }
+      }
+
+      return 0;
+   }
+
+   /* symbols */
+   if (mod & RETROKMOD_SHIFT)
+   {
+      switch (key)
+      {
+         case RETROK_BACKQUOTE:
+            return 126; /* ~ */
+         case RETROK_1:
+            return 33;  /* ! */
+         case RETROK_2:
+            return 64;  /* @ */
+         case RETROK_3:
+            return 35;  /* # */
+         case RETROK_4:
+            return 36;  /* $ */
+         case RETROK_5:
+            return 37;  /* % */
+         case RETROK_6:
+            return 94;  /* ^ */
+         case RETROK_7:
+            return 38;  /* & */
+         case RETROK_8:
+            return 42;  /* * */
+         case RETROK_9:
+            return 40;  /* ( */
+         case RETROK_0:
+            return 41;  /* ) */
+         case RETROK_MINUS:
+            return 95;  /* _ */
+         case RETROK_EQUALS:
+            return 43;  /* + */
+         case RETROK_LEFTBRACKET:
+            return 123; /* { */
+         case RETROK_RIGHTBRACKET:
+            return 125; /* } */
+         case RETROK_BACKSLASH:
+            return 124; /* | */
+         case RETROK_SEMICOLON:
+            return 58;  /* : */
+         case RETROK_QUOTE:
+            return 34;  /* " */
+         case RETROK_COMMA:
+            return 60;  /* < */
+         case RETROK_PERIOD:
+            return 62;  /* > */
+         case RETROK_SLASH:
+            return 63;  /* ? */
+         default:
+            break;
+      }
+   }
+
+   /* shift & capslock */
+   if (     key >= RETROK_a && key <= RETROK_z
+         && ((mod & RETROKMOD_SHIFT) ^ ((mod & RETROKMOD_CAPSLOCK) >> 5)))
+      return key - 32;
+
+   return key;
 }

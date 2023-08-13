@@ -141,9 +141,9 @@ const struct win32_lang_pair win32_lang_pairs[] =
 
 unsigned short win32_get_langid_from_retro_lang(enum retro_language lang)
 {
-   int i;
+   size_t i;
 
-   for (i = 0; i < sizeof(win32_lang_pairs) / sizeof(win32_lang_pairs[0]); i++)
+   for (i = 0; i < ARRAY_SIZE(win32_lang_pairs); i++)
    {
       if (win32_lang_pairs[i].lang == lang)
          return win32_lang_pairs[i].lang_ident;
@@ -154,9 +154,9 @@ unsigned short win32_get_langid_from_retro_lang(enum retro_language lang)
 
 enum retro_language win32_get_retro_lang_from_langid(unsigned short langid)
 {
-   int i;
+   size_t i;
 
-   for (i = 0; i < sizeof(win32_lang_pairs) / sizeof(win32_lang_pairs[0]); i++)
+   for (i = 0; i < ARRAY_SIZE(win32_lang_pairs); i++)
    {
       if (win32_lang_pairs[i].lang_ident > 0x3ff)
       {
@@ -269,7 +269,8 @@ static void gfx_set_dwm(void)
 
 static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
 {
-   char buildStr[11]      = {0};
+   size_t _len            = 0;
+   char build_str[11]     = {0};
    bool server            = false;
    const char *arch       = "";
 
@@ -315,46 +316,46 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
       *minor = vi.dwMinorVersion;
 
    if (vi.dwMajorVersion == 4 && vi.dwMinorVersion == 0)
-      snprintf(buildStr, sizeof(buildStr), "%lu", (DWORD)(LOWORD(vi.dwBuildNumber))); /* Windows 95 build number is in the low-order word only */
+      snprintf(build_str, sizeof(build_str), "%lu", (DWORD)(LOWORD(vi.dwBuildNumber))); /* Windows 95 build number is in the low-order word only */
    else
-      snprintf(buildStr, sizeof(buildStr), "%lu", vi.dwBuildNumber);
+      snprintf(build_str, sizeof(build_str), "%lu", vi.dwBuildNumber);
 
    switch (vi.dwMajorVersion)
    {
       case 10:
-         if (atoi(buildStr) >= 21996)
-            strlcpy(s, "Windows 11", len);
+         if (atoi(build_str) >= 21996)
+            _len = strlcpy(s, "Windows 11", len);
          else if (server)
-            strlcpy(s, "Windows Server 2016", len);
+            _len = strlcpy(s, "Windows Server 2016", len);
          else
-            strlcpy(s, "Windows 10", len);
+            _len = strlcpy(s, "Windows 10", len);
          break;
       case 6:
          switch (vi.dwMinorVersion)
          {
             case 3:
                if (server)
-                  strlcpy(s, "Windows Server 2012 R2", len);
+                  _len = strlcpy(s, "Windows Server 2012 R2", len);
                else
-                  strlcpy(s, "Windows 8.1", len);
+                  _len = strlcpy(s, "Windows 8.1", len);
                break;
             case 2:
                if (server)
-                  strlcpy(s, "Windows Server 2012", len);
+                  _len = strlcpy(s, "Windows Server 2012", len);
                else
-                  strlcpy(s, "Windows 8", len);
+                  _len = strlcpy(s, "Windows 8", len);
                break;
             case 1:
                if (server)
-                  strlcpy(s, "Windows Server 2008 R2", len);
+                  _len = strlcpy(s, "Windows Server 2008 R2", len);
                else
-                  strlcpy(s, "Windows 7", len);
+                  _len = strlcpy(s, "Windows 7", len);
                break;
             case 0:
                if (server)
-                  strlcpy(s, "Windows Server 2008", len);
+                  _len = strlcpy(s, "Windows Server 2008", len);
                else
-                  strlcpy(s, "Windows Vista", len);
+                  _len = strlcpy(s, "Windows Vista", len);
                break;
             default:
                break;
@@ -366,22 +367,22 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
             case 2:
                if (server)
                {
-                  strlcpy(s, "Windows Server 2003", len);
+                  _len = strlcpy(s, "Windows Server 2003", len);
                   if (GetSystemMetrics(SM_SERVERR2))
-                     strlcat(s, " R2", len);
+                     _len += strlcpy(s + _len, " R2", len - _len);
                }
                else
                {
                   /* Yes, XP Pro x64 is a higher version number than XP x86 */
                   if (string_is_equal(arch, "x64"))
-                     strlcpy(s, "Windows XP", len);
+                     _len = strlcpy(s, "Windows XP", len);
                }
                break;
             case 1:
-               strlcpy(s, "Windows XP", len);
+               _len = strlcpy(s, "Windows XP", len);
                break;
             case 0:
-               strlcpy(s, "Windows 2000", len);
+               _len = strlcpy(s, "Windows 2000", len);
                break;
          }
          break;
@@ -390,40 +391,39 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
          {
             case 0:
                if (vi.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
-                  strlcpy(s, "Windows 95", len);
+                  _len = strlcpy(s, "Windows 95", len);
                else if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
-                  strlcpy(s, "Windows NT 4.0", len);
+                  _len = strlcpy(s, "Windows NT 4.0", len);
                else
-                  strlcpy(s, "Unknown", len);
+                  _len = strlcpy(s, "Unknown", len);
                break;
             case 90:
-               strlcpy(s, "Windows ME", len);
+               _len = strlcpy(s, "Windows ME", len);
                break;
             case 10:
-               strlcpy(s, "Windows 98", len);
+               _len = strlcpy(s, "Windows 98", len);
                break;
          }
          break;
       default:
-         snprintf(s, len, "Windows %i.%i", *major, *minor);
+         _len = snprintf(s, len, "Windows %i.%i", *major, *minor);
          break;
    }
 
    if (!string_is_empty(arch))
    {
-      strlcat(s, " ", len);
-      strlcat(s, arch, len);
+      _len += strlcpy(s + _len, " ",  len - _len);
+      _len += strlcpy(s + _len, arch, len - _len);
    }
 
-   strlcat(s, " Build ", len);
-   strlcat(s, buildStr, len);
+   _len += strlcpy(s + _len, " Build ", len - _len);
+   _len += strlcpy(s + _len, build_str, len - _len);
 
    if (!string_is_empty(vi.szCSDVersion))
    {
-      strlcat(s, " ", len);
-      strlcat(s, vi.szCSDVersion, len);
+      _len += strlcpy(s + _len, " ", len - _len);
+      strlcpy(s + _len, vi.szCSDVersion, len - _len);
    }
-
 }
 
 static void frontend_win32_init(void *data)
@@ -466,8 +466,14 @@ static void init_nvda(void)
       }
    }
 #endif
-   g_plat_win32_flags &= ~PLAT_WIN32_FLAG_USE_NVDA;
-   g_plat_win32_flags |=  PLAT_WIN32_FLAG_USE_POWERSHELL;
+   /* The above code is executed on each accessibility speak event, so
+    * we should only revert to powershell if nvda_lib wasn't loaded previously,
+    * and we weren't able to load it on this call, or we don't HAVE_DYLIB */
+   if ((g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA) && !nvda_lib)
+   {
+      g_plat_win32_flags &= ~PLAT_WIN32_FLAG_USE_NVDA;
+      g_plat_win32_flags |=  PLAT_WIN32_FLAG_USE_POWERSHELL;
+   }
 }
 #endif
 
@@ -591,10 +597,8 @@ static void frontend_win32_env_get(int *argc, char *argv[],
       ":\\thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
       ":\\overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-#ifdef HAVE_VIDEO_LAYOUT
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
-      ":\\layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY],
+      ":\\overlays\\keyboards", sizeof(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]));
    if (!string_is_empty(libretro_directory))
       strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE], libretro_directory,
             sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
@@ -747,6 +751,7 @@ static void frontend_win32_respawn(char *s, size_t len, char *args)
    STARTUPINFO si;
    PROCESS_INFORMATION pi;
    char executable_path[PATH_MAX_LENGTH] = {0};
+   char executable_args[PATH_MAX_LENGTH] = {0};
 
    if (win32_fork_mode != FRONTEND_FORK_RESTART)
       return;
@@ -755,15 +760,16 @@ static void frontend_win32_respawn(char *s, size_t len, char *args)
          sizeof(executable_path));
    path_set(RARCH_PATH_CORE, executable_path);
 
+   /* Remove executable path from arguments given to CreateProcess */
+   snprintf(executable_args, sizeof(executable_args), "%s", strstr(args, ".exe") + 4);
+
    memset(&si, 0, sizeof(si));
    si.cb = sizeof(si);
    memset(&pi, 0, sizeof(pi));
 
-   if (!CreateProcess( executable_path, args,
-      NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
-   {
+   if (!CreateProcess(executable_path, executable_args,
+         NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
       RARCH_ERR("Failed to restart RetroArch\n");
-   }
 }
 
 static bool frontend_win32_set_fork(enum frontend_fork fork_mode)
@@ -917,12 +923,11 @@ static const char *accessibility_win_language_code(const char* language)
    return "";
 }
 
-static bool terminate_win32_process(PROCESS_INFORMATION pi)
+static void terminate_win32_process(PROCESS_INFORMATION pi)
 {
    TerminateProcess(pi.hProcess,0);
    CloseHandle(pi.hProcess);
    CloseHandle(pi.hThread);
-   return true;
 }
 
 static PROCESS_INFORMATION g_pi;

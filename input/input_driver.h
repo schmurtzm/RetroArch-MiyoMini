@@ -27,7 +27,7 @@
 #include <retro_inline.h>
 #include <libretro.h>
 #include <retro_miscellaneous.h>
-
+#include <streams/interface_stream.h>
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif /* HAVE_CONFIG_H */
@@ -40,8 +40,10 @@
 #include "input_osk.h"
 
 #include "../msg_hash.h"
+#ifdef HAVE_HID
 #include "include/hid_types.h"
 #include "include/hid_driver.h"
+#endif
 #include "include/gamepad.h"
 #include "../configuration.h"
 #include "../performance_counters.h"
@@ -78,7 +80,7 @@
 #define DEFAULT_MAX_PADS 4
 #elif defined(HAVE_ODROIDGO2)
 #define DEFAULT_MAX_PADS 8
-#elif defined(__linux__) || (defined(BSD) && !defined(__MACH__))
+#elif (defined(BSD) && !defined(__MACH__))
 #define DEFAULT_MAX_PADS 8
 #elif defined(__QNX__)
 #define DEFAULT_MAX_PADS 8
@@ -100,6 +102,40 @@
 
 #define INHERIT_JOYAXIS(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
 
+#define REPLAY_TOKEN_INVALID          '\0'
+#define REPLAY_TOKEN_REGULAR_FRAME    'f'
+#define REPLAY_TOKEN_CHECKPOINT_FRAME 'c'
+
+/**
+ * Takes as input analog key identifiers and converts them to corresponding
+ * bind IDs ident_minus and ident_plus.
+ * 
+ * @param idx          Analog key index (eg RETRO_DEVICE_INDEX_ANALOG_LEFT)
+ * @param ident        Analog key identifier (eg RETRO_DEVICE_ID_ANALOG_X)
+ * @param ident_minus  Bind ID minus, will be set by function.
+ * @param ident_plus   Bind ID plus,  will be set by function.
+ */
+#define input_conv_analog_id_to_bind_id(idx, ident, ident_minus, ident_plus) \
+   switch ((idx << 1) | ident) \
+   { \
+      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X: \
+         ident_minus = RARCH_ANALOG_LEFT_X_MINUS; \
+         ident_plus  = RARCH_ANALOG_LEFT_X_PLUS; \
+         break; \
+      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_Y: \
+         ident_minus = RARCH_ANALOG_LEFT_Y_MINUS; \
+         ident_plus  = RARCH_ANALOG_LEFT_Y_PLUS; \
+         break; \
+      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_X: \
+         ident_minus = RARCH_ANALOG_RIGHT_X_MINUS; \
+         ident_plus  = RARCH_ANALOG_RIGHT_X_PLUS; \
+         break; \
+      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_Y: \
+         ident_minus = RARCH_ANALOG_RIGHT_Y_MINUS; \
+         ident_plus  = RARCH_ANALOG_RIGHT_Y_PLUS; \
+         break; \
+   }
+
 RETRO_BEGIN_DECLS
 
 enum rarch_movie_type
@@ -107,6 +143,79 @@ enum rarch_movie_type
    RARCH_MOVIE_PLAYBACK = 0,
    RARCH_MOVIE_RECORD
 };
+
+enum input_driver_state_flags
+{
+   INP_FLAG_NONBLOCKING              = (1 << 0),
+   INP_FLAG_KB_LINEFEED_ENABLE       = (1 << 1),
+   INP_FLAG_KB_MAPPING_BLOCKED       = (1 << 2),
+   INP_FLAG_BLOCK_HOTKEY             = (1 << 3),
+   INP_FLAG_BLOCK_LIBRETRO_INPUT     = (1 << 4),
+   INP_FLAG_BLOCK_POINTER_INPUT      = (1 << 5),
+   INP_FLAG_GRAB_MOUSE_STATE         = (1 << 6),
+   INP_FLAG_OLD_ANALOG_DPAD_MODE_SET = (1 << 7),
+   INP_FLAG_OLD_LIBRETRO_DEVICE_SET  = (1 << 8),
+   INP_FLAG_REMAPPING_CACHE_ACTIVE   = (1 << 9),
+   INP_FLAG_DEFERRED_WAIT_KEYS       = (1 << 10)
+};
+
+#ifdef HAVE_BSV_MOVIE
+enum bsv_flags
+{
+   BSV_FLAG_MOVIE_START_RECORDING    = (1 << 0),
+   BSV_FLAG_MOVIE_START_PLAYBACK     = (1 << 1),
+   BSV_FLAG_MOVIE_PLAYBACK           = (1 << 2),
+   BSV_FLAG_MOVIE_RECORDING          = (1 << 3),
+   BSV_FLAG_MOVIE_END                = (1 << 4),
+   BSV_FLAG_MOVIE_EOF_EXIT           = (1 << 5)
+};
+
+struct bsv_state
+{
+   uint8_t flags;
+   /* Movie playback/recording support. */
+   char movie_auto_path[PATH_MAX_LENGTH];
+   /* Immediate playback/recording. */
+   char movie_start_path[PATH_MAX_LENGTH];
+};
+
+/* These data are always little-endian. */
+struct bsv_key_data
+{
+  uint8_t down;
+  uint16_t mod;
+  uint8_t _padding;
+  uint32_t code;
+  uint32_t character;
+};
+
+typedef struct bsv_key_data bsv_key_data_t;
+
+struct bsv_movie
+{
+   intfstream_t *file;
+   uint8_t *state;
+   /* A ring buffer keeping track of positions
+    * in the file for each frame. */
+   size_t *frame_pos;
+   size_t frame_mask;
+   size_t frame_ptr;
+   size_t min_file_pos;
+   size_t state_size;
+   int64_t identifier;
+
+   /* Staging variables for keyboard events */
+   uint8_t key_event_count;
+   bsv_key_data_t key_events[255];
+
+   /* Rewind state */
+   bool playback;
+   bool first_rewind;
+   bool did_rewind;
+};
+
+typedef struct bsv_movie bsv_movie_t;
+#endif
 
 /**
  * line_complete callback (when carriage return is pressed)
@@ -131,9 +240,6 @@ struct input_keyboard_line
    size_t size;
    bool enabled;
 };
-
-extern retro_keybind_set input_config_binds[MAX_USERS];
-extern retro_keybind_set input_autoconf_binds[MAX_USERS];
 
 struct rarch_joypad_info
 {
@@ -172,7 +278,6 @@ struct input_remote
    bool state[RARCH_BIND_LIST_END];
 };
 
-
 typedef struct
 {
    char display_name[256];
@@ -196,7 +301,6 @@ typedef struct input_list_element_t
    unsigned index;
    unsigned int state_size;
 } input_list_element;
-
 
 /**
  * Organizes the functions and data structures of each driver that are accessed
@@ -380,21 +484,6 @@ struct input_keyboard_ctx_wait
    input_keyboard_press_t cb;
 };
 
-enum input_driver_state_flags
-{
-   INP_FLAG_NONBLOCKING              = (1 << 0),
-   INP_FLAG_KB_LINEFEED_ENABLE       = (1 << 1),
-   INP_FLAG_KB_MAPPING_BLOCKED       = (1 << 2),
-   INP_FLAG_BLOCK_HOTKEY             = (1 << 3),
-   INP_FLAG_BLOCK_LIBRETRO_INPUT     = (1 << 4),
-   INP_FLAG_BLOCK_POINTER_INPUT      = (1 << 5),
-   INP_FLAG_GRAB_MOUSE_STATE         = (1 << 6),
-   INP_FLAG_OLD_ANALOG_DPAD_MODE_SET = (1 << 7),
-   INP_FLAG_OLD_LIBRETRO_DEVICE_SET  = (1 << 8),
-   INP_FLAG_REMAPPING_CACHE_ACTIVE   = (1 << 9),
-   INP_FLAG_DEFERRED_WAIT_KEYS       = (1 << 10)
-};
-
 typedef struct
 {
    /**
@@ -426,9 +515,13 @@ typedef struct
 #endif
 #ifdef HAVE_OVERLAY
    input_overlay_t *overlay_ptr;
+   input_overlay_t *overlay_cache_ptr;
    enum overlay_visibility *overlay_visibility;
    float overlay_eightway_dpad_slopes[2];
    float overlay_eightway_abxy_slopes[2];
+
+   /* touch pointer indexes from previous poll */
+   int old_touch_index_lut[OVERLAY_MAX_TOUCH];
 #endif
    uint16_t flags;
 #ifdef HAVE_NETWORKGAMEPAD
@@ -463,7 +556,6 @@ typedef struct
 
    /* primitives */
    bool analog_requested[MAX_USERS];
-   bool keyboard_menu_toggle_pressed;
    retro_bits_512_t keyboard_mapping_bits;    /* bool alignment */
    input_game_focus_state_t game_focus_state; /* bool alignment */
 } input_driver_state_t;
@@ -574,36 +666,6 @@ const input_device_driver_t *input_joypad_init_driver(
       const char *ident, void *data);
 
 /**
- * Takes as input analog key identifiers and converts them to corresponding
- * bind IDs ident_minus and ident_plus.
- * 
- * @param idx          Analog key index (eg RETRO_DEVICE_INDEX_ANALOG_LEFT)
- * @param ident        Analog key identifier (eg RETRO_DEVICE_ID_ANALOG_X)
- * @param ident_minus  Bind ID minus, will be set by function.
- * @param ident_plus   Bind ID plus,  will be set by function.
- */
-#define input_conv_analog_id_to_bind_id(idx, ident, ident_minus, ident_plus) \
-   switch ((idx << 1) | ident) \
-   { \
-      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X: \
-         ident_minus = RARCH_ANALOG_LEFT_X_MINUS; \
-         ident_plus  = RARCH_ANALOG_LEFT_X_PLUS; \
-         break; \
-      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_Y: \
-         ident_minus = RARCH_ANALOG_LEFT_Y_MINUS; \
-         ident_plus  = RARCH_ANALOG_LEFT_Y_PLUS; \
-         break; \
-      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_X: \
-         ident_minus = RARCH_ANALOG_RIGHT_X_MINUS; \
-         ident_plus  = RARCH_ANALOG_RIGHT_X_PLUS; \
-         break; \
-      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_Y: \
-         ident_minus = RARCH_ANALOG_RIGHT_Y_MINUS; \
-         ident_plus  = RARCH_ANALOG_RIGHT_Y_PLUS; \
-         break; \
-   }
-
-/**
  * Registers a newly connected pad with RetroArch.
  * 
  * @param port    
@@ -633,8 +695,6 @@ input_driver_state_t *input_state_get_ptr(void);
 
 /*************************************/
 #ifdef HAVE_HID
-#include "include/hid_driver.h"
-
 /**
  * Get an enumerated list of all HID driver names
  * 
@@ -907,9 +967,6 @@ void input_config_get_bind_string_joykey(
       char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size);
 
-int16_t input_state_internal(unsigned port, unsigned device,
-      unsigned idx, unsigned id);
-
 bool input_key_pressed(int key, bool keyboard_pressed);
 
 bool input_set_rumble_state(unsigned port,
@@ -943,20 +1000,28 @@ void input_driver_deinit_command(input_driver_state_t *input_st);
 #endif
 
 #ifdef HAVE_OVERLAY
-void input_overlay_deinit(void);
+void input_overlay_unload(void);
 
 void input_overlay_init(void);
+
+void input_overlay_check_mouse_cursor(void);
 #endif
 
 #ifdef HAVE_BSV_MOVIE
 void bsv_movie_frame_rewind(void);
-
-bool bsv_movie_init(input_driver_state_t *input_st);
-
+void bsv_movie_next_frame(input_driver_state_t *input_st);
+void bsv_movie_finish_rewind(input_driver_state_t *input_st);
 void bsv_movie_deinit(input_driver_state_t *input_st);
 
-bool bsv_movie_check(input_driver_state_t *input_st,
-      settings_t *settings);
+bool movie_start_playback(input_driver_state_t *input_st, char *path);
+bool movie_start_record(input_driver_state_t *input_st, char *path);
+bool movie_stop_playback(input_driver_state_t *input_st);
+bool movie_stop_record(input_driver_state_t *input_st);
+bool movie_stop(input_driver_state_t *input_st);
+
+size_t replay_get_serialize_size(void);
+bool replay_get_serialized_data(void* buffer);
+bool replay_set_serialized_data(void* buffer);
 #endif
 
 /**
@@ -1062,6 +1127,9 @@ extern hid_driver_t libusb_hid;
 extern hid_driver_t wiiusb_hid;
 extern hid_driver_t wiiu_hid;
 #endif /* HAVE_HID */
+
+extern retro_keybind_set input_config_binds[MAX_USERS];
+extern retro_keybind_set input_autoconf_binds[MAX_USERS];
 
 RETRO_END_DECLS
 

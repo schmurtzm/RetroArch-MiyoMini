@@ -34,7 +34,7 @@
 
 /* Required for 3DS display mode setting */
 #if defined(_3DS)
-#include "gfx/common/ctr_common.h"
+#include "gfx/common/ctr_defines.h"
 #endif
 
 /* Required for OpenDingux IPU filter + refresh
@@ -193,6 +193,11 @@
 #define DEFAULT_CHEEVOS_VISIBILITY_UNLOCK true
 #define DEFAULT_CHEEVOS_VISIBILITY_MASTERY true
 #define DEFAULT_CHEEVOS_VISIBILITY_ACCOUNT true
+#define DEFAULT_CHEEVOS_VISIBILITY_LBOARD_START true
+#define DEFAULT_CHEEVOS_VISIBILITY_LBOARD_SUBMIT true
+#define DEFAULT_CHEEVOS_VISIBILITY_LBOARD_CANCEL true
+#define DEFAULT_CHEEVOS_VISIBILITY_LBOARD_TRACKERS true
+#define DEFAULT_CHEEVOS_VISIBILITY_PROGRESS_TRACKER true
 #endif
 
 /* VIDEO */
@@ -320,6 +325,12 @@
  * into a single (compressed) file for improved
  * load times on platforms with slow IO */
 #define DEFAULT_CORE_INFO_CACHE_ENABLE true
+
+/* Specifies whether to ignore core info
+ * savestate capabilities, allowing to
+ * experiment with related features
+ * (run ahead, rewind, etc) */
+#define DEFAULT_CORE_INFO_SAVESTATE_BYPASS false
 
 /* Specifies whether to 'reload' (fork and quit)
  * RetroArch when launching content with the
@@ -568,6 +579,14 @@
 #define DEFAULT_INPUT_OVERLAY_AUTO_SCALE false
 #endif
 
+#ifdef UDEV_TOUCH_SUPPORT
+#define DEFAULT_INPUT_TOUCH_VMOUSE_POINTER true
+#define DEFAULT_INPUT_TOUCH_VMOUSE_MOUSE true
+#define DEFAULT_INPUT_TOUCH_VMOUSE_TOUCHPAD true
+#define DEFAULT_INPUT_TOUCH_VMOUSE_TRACKBALL false
+#define DEFAULT_INPUT_TOUCH_VMOUSE_GESTURE true
+#endif
+
 #include "runtime_file_defines.h"
 #ifdef HAVE_MENU
 #include "menu/menu_defines.h"
@@ -619,9 +638,10 @@
 #define DEFAULT_QUICK_MENU_SHOW_RESTART_CONTENT true
 #define DEFAULT_QUICK_MENU_SHOW_CLOSE_CONTENT true
 #define DEFAULT_QUICK_MENU_SHOW_TAKE_SCREENSHOT true
-#define DEFAULT_QUICK_MENU_SHOW_SAVESTATE_SUBMENU false
+#define DEFAULT_QUICK_MENU_SHOW_SAVESTATE_SUBMENU true
 #define DEFAULT_QUICK_MENU_SHOW_SAVE_LOAD_STATE true
 #define DEFAULT_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE true
+#define DEFAULT_QUICK_MENU_SHOW_REPLAY false
 #define DEFAULT_QUICK_MENU_SHOW_ADD_TO_FAVORITES true
 #define DEFAULT_QUICK_MENU_SHOW_START_RECORDING true
 #define DEFAULT_QUICK_MENU_SHOW_START_STREAMING true
@@ -746,7 +766,7 @@
 #define DEFAULT_XMB_TITLE_MARGIN                   5
 #define DEFAULT_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET 0
 #define MAXIMUM_XMB_TITLE_MARGIN                   12
-#define DEFAULT_XMB_ALPHA_FACTOR                   75
+#define DEFAULT_XMB_ALPHA_FACTOR                   90
 
 #define DEFAULT_MENU_FONT_COLOR_RED 255
 #define DEFAULT_MENU_FONT_COLOR_GREEN 255
@@ -862,7 +882,7 @@
 #define DEFAULT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY 80
 #define DEFAULT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY 50
 
-#if defined(ANDROID) || defined(_WIN32) || defined(HAVE_STEAM)
+#if defined(ANDROID) || defined(_WIN32) || defined(HAVE_STEAM) || TARGET_OS_TV
 #define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS true
 #else
 #define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS false
@@ -1064,10 +1084,13 @@
 /* Output samplerate. */
 #if defined(GEKKO) || defined(MIYOO)
 #define DEFAULT_OUTPUT_RATE 32000
+#define DEFAULT_INPUT_RATE  32000
 #elif defined(_3DS) || defined(RETROFW)
 #define DEFAULT_OUTPUT_RATE 32730
+#define DEFAULT_INPUT_RATE  32730
 #else
 #define DEFAULT_OUTPUT_RATE 48000
+#define DEFAULT_INPUT_RATE  48000
 #endif
 
 /* Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults. */
@@ -1078,8 +1101,10 @@
 #if defined(ANDROID) || defined(EMSCRIPTEN) || defined(RETROFW) || defined(MIYOO)
 /* For most Android devices, 64ms is way too low. */
 #define DEFAULT_OUT_LATENCY 128
+#define DEFAULT_IN_LATENCY 128
 #else
 #define DEFAULT_OUT_LATENCY 64
+#define DEFAULT_IN_LATENCY 64
 #endif
 
 /* Will sync audio. (recommended) */
@@ -1108,15 +1133,28 @@
 
 #ifdef HAVE_WASAPI
 /* WASAPI defaults */
-#define DEFAULT_WASAPI_EXCLUSIVE_MODE true
+#define DEFAULT_WASAPI_EXCLUSIVE_MODE false
 #define DEFAULT_WASAPI_FLOAT_FORMAT false
-/* auto */
+/* Automatic shared mode buffer */
 #define DEFAULT_WASAPI_SH_BUFFER_LENGTH -16
 #endif
 
 /* Automatically mute audio when fast forward
  * is enabled */
 #define DEFAULT_AUDIO_FASTFORWARD_MUTE false
+/* Speed up audio to match fast-forward speed up.
+ * Avoids crackling */
+#define DEFAULT_AUDIO_FASTFORWARD_SPEEDUP false
+
+#ifdef HAVE_MICROPHONE
+/* Microphone support */
+#define DEFAULT_MICROPHONE_ENABLE true
+#define DEFAULT_MICROPHONE_DEVICE NULL
+
+#ifdef HAVE_WASAPI
+#define DEFAULT_WASAPI_MICROPHONE_SH_BUFFER_LENGTH 0
+#endif
+#endif
 
 /* MISC */
 
@@ -1257,6 +1295,25 @@
  *   savestates will be deleted in this case) */
 #define DEFAULT_SAVESTATE_MAX_KEEP 0
 
+/* When recording replays, replay index is automatically
+ * incremented before recording starts.
+ * When the content is loaded, replay index will be set
+ * to the highest existing value. */
+#define DEFAULT_REPLAY_AUTO_INDEX true
+
+/* Specifies the maximum number of replays to keep
+ * when replay auto index is enabled
+ * > When limit is exceeded, replay with the lowest
+ *   index will be deleted automatically when creating
+ *   a new replay
+ * > Setting value to zero disables the limit (no
+ *   replays will be deleted in this case) */
+#define DEFAULT_REPLAY_MAX_KEEP 0
+
+/* Specifies how often checkpoints will be saved to replay files during recording.
+ * > Setting value to zero disables recording checkpoints. */
+#define DEFAULT_REPLAY_CHECKPOINT_INTERVAL 0
+
 /* Automatically saves a savestate at the end of RetroArch's lifetime.
  * The path is $SRAM_PATH.auto.
  * RetroArch will automatically load any savestate with this path on
@@ -1299,6 +1356,8 @@
 
 /* Hide warning messages when using the Run Ahead feature. */
 #define DEFAULT_RUN_AHEAD_HIDE_WARNINGS false
+/* Hide warning messages when using Preemptive Frames. */
+#define DEFAULT_PREEMPT_HIDE_WARNINGS   false
 
 /* Enable stdin/network command interface. */
 #define DEFAULT_NETWORK_CMD_ENABLE false
@@ -1368,7 +1427,7 @@
 #define DEFAULT_PLAYLIST_SHOW_SUBLABELS true
 #endif
 
-#define DEFAULT_PLAYLIST_SHOW_HISTORY_ICONS PLAYLIST_SHOW_HISTORY_ICONS_DEFAULT
+#define DEFAULT_PLAYLIST_SHOW_HISTORY_ICONS PLAYLIST_SHOW_HISTORY_ICONS_MAIN
 
 /* Show the indices of playlist entries in
  * a menu-driver-specific fashion */
@@ -1385,6 +1444,8 @@
  * drivers and display widgets */
 #if defined(VITA)
 #define DEFAULT_MENU_SCALE_FACTOR 1.5f
+#elif defined(__ANDROID__)
+#define DEFAULT_MENU_SCALE_FACTOR 0.75f
 #else
 #define DEFAULT_MENU_SCALE_FACTOR 1.0f
 #endif
@@ -1456,7 +1517,7 @@
 #if defined(DINGUX)
 #define DEFAULT_INPUT_MAX_USERS 1
 #else
-#define DEFAULT_INPUT_MAX_USERS 5
+#define DEFAULT_INPUT_MAX_USERS 8
 #endif
 
 #define DEFAULT_INPUT_BIND_TIMEOUT 5
@@ -1526,8 +1587,12 @@
 #endif
 
 /* MIDI */
-#define DEFAULT_MIDI_INPUT  "OFF"
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#define DEFAULT_MIDI_OUTPUT "Microsoft GS Wavetable Synth"
+#else
 #define DEFAULT_MIDI_OUTPUT "OFF"
+#endif
+#define DEFAULT_MIDI_INPUT  "OFF"
 #define DEFAULT_MIDI_VOLUME 100
 
 #ifdef HAVE_MIST

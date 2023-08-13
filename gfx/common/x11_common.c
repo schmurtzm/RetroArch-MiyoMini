@@ -111,8 +111,10 @@ static void x11_hide_mouse(Display *dpy, Window win)
    XFreeColors(dpy, colormap, &black.pixel, 1, 0);
 }
 
-void x11_show_mouse(Display *dpy, Window win, bool state)
+void x11_show_mouse(void *data, bool state)
 {
+   Display *dpy = g_x11_dpy;
+   Window   win = g_x11_win;
    if (state)
       XUndefineCursor(dpy, win);
    else
@@ -242,15 +244,20 @@ static void xdg_screensaver_inhibit(Window wnd)
    }
 }
 
-void x11_suspend_screensaver(Window wnd, bool enable)
+bool x11_suspend_screensaver(void *data, bool enable)
 {
+   Window wnd;
+   if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
+      return false;
+   wnd = video_driver_window_get();
 #ifdef HAVE_DBUS
     if (dbus_suspend_screensaver(enable))
-       return;
+       return true;
 #endif
     if (enable)
        if (xdg_screensaver_available)
           xdg_screensaver_inhibit(wnd);
+    return true;
 }
 
 #ifdef HAVE_XF86VM
@@ -660,7 +667,7 @@ bool x11_alive(void *data)
              * is a key press of the same key combination,
              * then it's auto-repeat and the key wasn't 
              * actually released. */
-            if(XEventsQueued(g_x11_dpy, QueuedAfterReading))
+            if (XEventsQueued(g_x11_dpy, QueuedAfterReading))
             {
                XEvent next_event;
                XPeekEvent(g_x11_dpy, &next_event);
@@ -857,7 +864,7 @@ static bool x11_check_atom_supported(Display *dpy, Atom atom)
    if (!prop || type != XA_ATOM)
       return false;
 
-   for (i = 0; i < nitems; i++)
+   for (i = 0; i < (int)nitems; i++)
    {
       if (prop[i] == atom)
       {

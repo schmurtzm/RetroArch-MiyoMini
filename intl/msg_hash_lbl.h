@@ -115,6 +115,141 @@ MSG_HASH(
    "audio_driver"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_RSOUND,
+   "rsound"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_AUDIOIO,
+   "audioio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_OSS,
+   "oss"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_ALSA,
+   "alsa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_ALSATHREAD,
+   "alsathread"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_TINYALSA,
+   "tinyalsa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_ROAR,
+   "roar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_COREAUDIO,
+   "coreaudio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_COREAUDIO3,
+   "coreaudio3"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_AL,
+   "openal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_SL,
+   "opensl"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_SDL,
+   "sdl"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_SDL2,
+   "sdl2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_DSOUND,
+   "dsound"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_WASAPI,
+   "wasapi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_XAUDIO,
+   "xaudio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PULSE,
+   "pulse"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_EXT,
+   "ext"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_XENON360,
+   "xenon360"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PS3,
+   "ps3"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_WII,
+   "gx"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_WIIU,
+   "AX"
+   )
+#if defined(VITA)
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PSP,
+   "vita"
+   )
+#elif defined(ORBIS)
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PSP,
+   "orbis"
+   )
+#else
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PSP,
+   "psp"
+   )
+#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PS2,
+   "ps2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_CTR,
+   "dsp"
+   )
+#if defined(HAVE_LIBNX)
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_SWITCH,
+   "switch_audren_thread"
+   )
+#else
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_SWITCH,
+   "switch"
+   )
+#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_RWEBAUDIO,
+   "rwebaudio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_JACK,
+   "jack"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_NULL,
+   "null"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,
    "audio_dsp_plugin"
    )
@@ -149,6 +284,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE,
    "audio_fastforward_mute"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "audio_fastforward_speedup"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
@@ -198,9 +337,63 @@ MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    "audio_wasapi_sh_buffer_length"
    )
+#ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_ENABLE,
+   "microphone_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER,
+   "microphone_resampler_driver"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_DEVICE,
+   "microphone_device"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_SETTINGS,
+   "microphone_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_DRIVER,
+   "microphone_driver"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_INPUT_RATE,
+   "microphone_input_rate"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_LATENCY,
+   "microphone_latency"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_BLOCK_FRAMES,
+   "microphone_block_frames"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "microphone_wasapi_exclusive_mode"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "microphone_wasapi_float_format"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "microphone_wasapi_sh_buffer_length"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_QUALITY,
+   "microphone_resampler_quality"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,
    "autosave_interval"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_REPLAY_CHECKPOINT_INTERVAL,
+   "replay_checkpoint_interval"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE,
@@ -385,10 +578,6 @@ MSG_HASH(
    "cheevos_hardcore_mode_enable"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "cheevos_leaderboards_enable"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_RICHPRESENCE_ENABLE,
    "cheevos_richpresence_enable"
    )
@@ -471,6 +660,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_ACCOUNT,
    "cheevos_visibility_account"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_START,
+   "cheevos_visibility_lboard_start"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "cheevos_visibility_lboard_submit"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "cheevos_visibility_lboard_cancel"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "cheevos_visibility_lboard_trackers"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "cheevos_visibility_progress_tracker"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CLOSE_CONTENT,
@@ -817,6 +1026,20 @@ MSG_HASH(
    "deferred_dropdown_box_list_netplay_mitm_server"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_AUDIO_DEVICE,
+   "deferred_dropdown_box_list_audio_device"
+   )
+#ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MICROPHONE_DEVICE,
+   "deferred_dropdown_box_list_microphone_device"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_MICROPHONE_SETTINGS_LIST,
+   "deferred_microphone_settings_list"
+   )
+#endif
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CONFIGURATIONS_LIST,
    "deferred_configurations_list"
    )
@@ -997,6 +1220,10 @@ MSG_HASH(
    "deferred_frame_throttle_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_INPUT_RETROPAD_BINDS_LIST,
+   "deferred_input_retropad_binds"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST,
    "deferred_input_hotkey_binds"
    )
@@ -1111,6 +1338,10 @@ MSG_HASH(
    "deferred_onscreen_overlay_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_OSK_OVERLAY_SETTINGS_LIST,
+   "deferred_osk_overlay_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST,
    "deferred_onscreen_video_layout_settings_list"
    )
@@ -1177,6 +1408,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_SAVING_SETTINGS_LIST,
    "deferred_saving_settings_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CLOUD_SYNC_SETTINGS_LIST,
+   "deferred_cloud_sync_settings_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST,
@@ -1349,6 +1584,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE,
    "core_info_cache_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_INFO_SAVESTATE_BYPASS,
+   "core_info_savestate_bypass"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN,
@@ -1630,6 +1869,28 @@ MSG_HASH(
    MENU_ENUM_LABEL_INPUT_TOUCH_SCALE,
    "input_touch_scale"
    )
+#ifdef UDEV_TOUCH_SUPPORT
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_POINTER,
+   "input_touch_vmouse_pointer"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_MOUSE,
+   "input_touch_vmouse_mouse"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "input_touch_vmouse_touchpad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "input_touch_vmouse_trackball"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+   "input_touch_vmouse_gesture"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_BIND_MODE,
    "input_bind_mode"
@@ -1661,6 +1922,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_DUTY_CYCLE,
    "input_duty_cycle"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS,
+   "input_retropad_binds"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS,
@@ -1719,6 +1984,10 @@ MSG_HASH(
    "input_overlay"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OSK_OVERLAY,
+   "input_osk_overlay"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE,
    "input_overlay_enable"
    )
@@ -1753,6 +2022,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_SCALE,
    "input_overlay_auto_scale"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "input_osk_overlay_auto_scale"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
@@ -2363,6 +2636,10 @@ MSG_HASH(
    "onscreen_overlay_settings"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_OSK_OVERLAY_SETTINGS,
+   "osk_overlay_settings"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
    "onscreen_video_layout_settings"
    )
@@ -2391,6 +2668,10 @@ MSG_HASH(
    "overlay_directory"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_OSK_OVERLAY_DIRECTORY,
+   "osk_overlay_directory"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_LAYOUT_DIRECTORY,
    "video_layout_directory"
    )
@@ -2399,8 +2680,16 @@ MSG_HASH(
    "input_overlay_opacity"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_OSK_OVERLAY_OPACITY,
+   "input_osk_overlay_opacity"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_OVERLAY_PRESET,
    "input_overlay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OSK_OVERLAY_PRESET,
+   "input_osk_overlay"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_OVERLAY_SCALE_LANDSCAPE,
@@ -3127,12 +3416,24 @@ MSG_HASH(
    "savestate_max_keep"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_REPLAY_MAX_KEEP,
+   "replay_max_keep"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SAVESTATE_DIRECTORY,
    "savestate_directory"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG,
    "save_current_config"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD,
+   "override_file_load"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERRIDE_UNLOAD,
+   "override_unload"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -3147,6 +3448,18 @@ MSG_HASH(
    "save_current_config_override_game"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "remove_current_config_override_core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "remove_current_config_override_content_dir"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "remove_current_config_override_game"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SAVE_NEW_CONFIG,
    "save_new_config"
    )
@@ -3155,8 +3468,52 @@ MSG_HASH(
    "savestate"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_RECORD_REPLAY,
+   "record_replay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_REPLAY_SLOT,
+   "replay_slot"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PLAY_REPLAY,
+   "play_replay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HALT_REPLAY,
+   "halt_replay"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SAVING_SETTINGS,
    "saving_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS,
+   "cloud_sync_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_ENABLE,
+   "cloud_sync_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "cloud_sync_destructive"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER,
+   "cloud_sync_driver"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_URL,
+   "cloud_sync_url"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_USERNAME,
+   "cloud_sync_username"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_PASSWORD,
+   "cloud_sync_password"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SCAN_DIRECTORY,
@@ -3265,6 +3622,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_RUN_AHEAD_FRAMES,
    "run_ahead_frames"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PREEMPT_ENABLE,
+   "preemptive_frames_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PREEMPT_UNSUPPORTED,
+   "preemptive_frames_unsupported"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PREEMPT_HIDE_WARNINGS,
+   "preemptive_frames_hide_warnings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PREEMPT_FRAMES,
+   "preemptive_frames"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE,
@@ -4681,6 +5054,10 @@ MSG_HASH(
    "quick_menu_show_save_load_state"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_QUICK_MENU_SHOW_REPLAY,
+   "quick_menu_show_replay"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "quick_menu_show_undo_save_load_state"
    )
@@ -4731,6 +5108,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    "quick_menu_show_save_core_overrides"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "quick_menu_show_save_content_dir_overrides"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,

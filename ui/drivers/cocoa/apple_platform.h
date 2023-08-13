@@ -1,6 +1,14 @@
 #ifndef COCOA_APPLE_PLATFORM_H
 #define COCOA_APPLE_PLATFORM_H
 
+#if TARGET_OS_TV
+#include "config_file.h"
+extern config_file_t *open_userdefaults_config_file(void);
+extern void write_userdefaults_config_file(void);
+#endif
+
+#ifdef __OBJC__
+
 #ifdef HAVE_METAL
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
@@ -17,6 +25,7 @@ typedef enum apple_view_type
 
 #if defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)
 @interface WindowListener : NSResponder<NSWindowDelegate>
+@property (nonatomic) NSWindow* window;
 @end
 #endif
 
@@ -37,7 +46,9 @@ typedef enum apple_view_type
  * the displays should not sleep.
  */
 - (bool)setDisableDisplaySleep:(bool)disable;
-- (void)setupMainWindow;
+#if defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)
+- (void)updateWindowedMode;
+#endif
 @end
 
 #endif
@@ -49,6 +60,9 @@ extern id apple_platform;
 #endif
 
 #if defined(HAVE_COCOATOUCH)
+void rarch_start_draw_observer(void);
+void rarch_stop_draw_observer(void);
+
 @interface RetroArch_iOS : UINavigationController<ApplePlatform, UIApplicationDelegate,
 UINavigationControllerDelegate> {
     UIView *_renderView;
@@ -86,6 +100,8 @@ UINavigationControllerDelegate> {
 @property(nonatomic, retain) NSWindow IBOutlet *window;
 
 @end
+#endif
+
 #endif
 
 #endif

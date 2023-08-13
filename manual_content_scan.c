@@ -513,6 +513,7 @@ enum manual_content_scan_playlist_refresh_status
    bool search_recursively      = false;
    bool search_archives         = false;
    bool filter_dat_content      = false;
+   bool overwrite_playlist      = false;
 #ifdef HAVE_LIBRETRODB
    struct string_list *rdb_list = NULL;
 #endif
@@ -542,6 +543,7 @@ enum manual_content_scan_playlist_refresh_status
    search_recursively = playlist_get_scan_search_recursively(playlist);
    search_archives    = playlist_get_scan_search_archives(playlist);
    filter_dat_content = playlist_get_scan_filter_dat_content(playlist);
+   overwrite_playlist = playlist_get_scan_overwrite_playlist(playlist);
 
    /* Determine system name (playlist basename
     * without extension) */
@@ -712,11 +714,10 @@ enum manual_content_scan_playlist_refresh_status
    scan_settings.search_recursively = search_recursively;
    scan_settings.search_archives    = search_archives;
    scan_settings.filter_dat_content = filter_dat_content;
+   scan_settings.overwrite_playlist = overwrite_playlist;
    /* When refreshing a playlist:
-    * > We never overwrite the existing file
     * > We always validate entries in the
     *   existing file */
-   scan_settings.overwrite_playlist = false;
    scan_settings.validate_entries   = true;
 
 end:
@@ -1039,11 +1040,9 @@ bool manual_content_scan_get_task_config(
          task_config->database_name,
          task_config->system_name,
          sizeof(task_config->database_name));
-   task_config->database_name[len  ] = '.';
-   task_config->database_name[len+1] = 'l';
-   task_config->database_name[len+2] = 'p';
-   task_config->database_name[len+3] = 'l';
-   task_config->database_name[len+4] = '\0';
+   strlcpy(task_config->database_name       + len,
+         ".lpl",
+         sizeof(task_config->database_name) - len);
 
    /* ...which can in turn be used to generate the
     * playlist path */
@@ -1274,9 +1273,9 @@ static bool manual_content_scan_get_playlist_content_path(
       if (filter_exts || (archive_list->size == 1))
       {
          /* Build path to file inside archive */
-         s[_len  ] = '#';
-         s[_len+1] = '\0';
-         strlcat(s, archive_file, len);
+         s[  _len] = '#';
+         s[++_len] = '\0';
+         strlcpy(s + _len, archive_file, len - _len);
       }
 
       string_list_free(archive_list);

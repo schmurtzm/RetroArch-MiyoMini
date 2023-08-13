@@ -32,7 +32,6 @@
 #include <GLKit/GLKit.h>
 #endif
 
-#include <retro_assert.h>
 #include <retro_timers.h>
 #include <compat/apple_compat.h>
 #include <string/stdstring.h>
@@ -245,7 +244,7 @@ static void cocoa_gl_gfx_ctx_bind_hw_render(void *data, bool enable)
 {
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
 
-   cocoa_ctx->flags |= COCOA_CTX_FLAG_USE_HW_CTX;
+   cocoa_ctx->flags           |= COCOA_CTX_FLAG_USE_HW_CTX;
 
 #ifdef OSX
    if (enable)
@@ -293,9 +292,9 @@ static void cocoa_gl_gfx_ctx_swap_interval(void *data, int i)
    /* < No way to disable Vsync on iOS? */
    /*   Just skip presents so fast forward still works. */
    if (interval)
-      cocoa_ctx->flags |=  COCOA_CTX_FLAG_IS_SYNCING;
+      cocoa_ctx->flags          |=  COCOA_CTX_FLAG_IS_SYNCING;
    else
-      cocoa_ctx->flags &= ~COCOA_CTX_FLAG_IS_SYNCING;
+      cocoa_ctx->flags          &= ~COCOA_CTX_FLAG_IS_SYNCING;
    cocoa_ctx->fast_forward_skips = interval ? 0 : 3;
 #endif
 }
@@ -331,6 +330,7 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
       unsigned width, unsigned height, bool fullscreen)
 {
 #if defined(HAVE_COCOA_METAL)
+   gfx_ctx_mode_t mode;
    NSView *g_view              = apple_platform.renderView;
 #elif defined(HAVE_COCOA)
    CocoaView *g_view           = (CocoaView*)nsview_get_ptr();
@@ -366,7 +366,7 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
       {
          case 3:
 #if MAC_OS_X_VERSION_10_7
-            if (g_gl_minor >= 1 && g_gl_minor <= 3)
+            if (g_gl_minor >= 1 && g_gl_minor <= 3) /* OpenGL 3.2 Core */
             {
                attributes[6] = NSOpenGLPFAOpenGLProfile;
                attributes[7] = NSOpenGLProfileVersion3_2Core;
@@ -375,7 +375,7 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
             break;
          case 4:
 #if MAC_OS_X_VERSION_10_10
-            if (g_gl_minor == 1)
+            if (g_gl_minor == 1) /* OpenGL 4.1 Core */
             {
                attributes[6] = NSOpenGLPFAOpenGLProfile;
                attributes[7] = NSOpenGLProfileVersion4_1Core;
@@ -415,11 +415,9 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
 #endif
 
 #ifdef HAVE_COCOA_METAL
-   gfx_ctx_mode_t mode = {
-      .width = width,
-      .height = height,
-      .fullscreen = fullscreen,
-   };
+   mode.width           = width;
+   mode.height          = height;
+   mode.fullscreen      = fullscreen;
    [apple_platform setVideoMode:mode];
    cocoa_show_mouse(data, !fullscreen);
 #else
@@ -546,7 +544,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoa_get_metrics,
    NULL, /* translate_aspect */
 #ifdef OSX
-   cocoa_update_title,
+   video_driver_update_title,
 #else
    NULL, /* update_title */
 #endif

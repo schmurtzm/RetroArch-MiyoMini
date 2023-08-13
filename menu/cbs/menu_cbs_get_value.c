@@ -97,6 +97,7 @@ static void menu_action_setting_audio_mixer_stream_volume(
       const char *path,
       char *s2, size_t len2)
 {
+   size_t _len;
    unsigned offset = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN);
    *w              = 19;
    strlcpy(s2, path, len2);
@@ -104,7 +105,8 @@ static void menu_action_setting_audio_mixer_stream_volume(
    if (offset >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
 
-   snprintf(s, len, "%.2f dB", audio_driver_mixer_get_stream_volume(offset));
+   _len = snprintf(s, len, "%.2f", audio_driver_mixer_get_stream_volume(offset));
+   strlcpy(s + _len, " dB", len - _len);
 }
 #endif
 
@@ -158,6 +160,30 @@ static void menu_action_setting_disp_set_label_remap_file_info(
 
    if (!string_is_empty(remap_file))
       strlcpy(s, remap_file, len);
+   else
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+
+   strlcpy(s2, path, len2);
+}
+
+static void menu_action_setting_disp_set_label_override_file_info(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   const char *override_path   = path_get(RARCH_PATH_CONFIG_OVERRIDE);
+   const char *override_file   = NULL;
+
+   *w = 19;
+
+   if (!string_is_empty(override_path))
+      override_file = path_basename_nocompression(override_path);
+
+   if (!string_is_empty(override_file))
+      strlcpy(s, override_file, len);
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 
@@ -497,8 +523,8 @@ static void menu_action_setting_disp_set_label_core_manager_entry(
     * > Note: We search core_info here instead of
     *   calling core_info_get_core_lock() since we
     *   don't want to perform disk access every frame */
-   if (core_info_find(path, &core_info) &&
-       core_info->is_locked)
+   if (   core_info_find(path, &core_info)
+       && core_info->is_locked)
    {
       s[0] = '[';
       s[1] = '!';
@@ -629,20 +655,23 @@ static void menu_action_setting_disp_set_label_cpu_policy(
       const char *path,
       char *s2, size_t len2)
 {
-   unsigned policyid = atoi(path);
+   unsigned policyid              = atoi(path);
    cpu_scaling_driver_t **drivers = get_cpu_scaling_drivers(false);
-   cpu_scaling_driver_t *d = drivers[policyid];
+   cpu_scaling_driver_t *d        = drivers[policyid];
+   size_t _len                    = snprintf(s2, len2, "%s %d",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_POLICY_ENTRY),
+         policyid);
 
-   *s = '\0';
-   *w = 0;
+   *s   = '\0';
+   *w   = 0;
 
    if (d->affected_cpus)
-      snprintf(s2, len2, "%s %d [CPU(s) %s]", msg_hash_to_str(
-         MENU_ENUM_LABEL_VALUE_CPU_POLICY_ENTRY), policyid,
-         d->affected_cpus);
-   else
-      snprintf(s2, len2, "%s %d", msg_hash_to_str(
-         MENU_ENUM_LABEL_VALUE_CPU_POLICY_ENTRY), policyid);
+   {
+      _len += strlcpy(s2 + _len, " [CPU(s) ",      len2 - _len);
+      _len += strlcpy(s2 + _len, d->affected_cpus, len2 - _len);
+      s2[  _len] = ']' ;
+      s2[++_len] = '\0';
+   }
 }
 
 static void menu_action_cpu_managed_freq_label(
@@ -672,21 +701,9 @@ static void menu_action_cpu_managed_freq_label(
    };
 
    if (freq == 1)
-   {
-      s[0] = 'M';
-      s[1] = 'i';
-      s[2] = 'n';
-      s[3] = '.';
-      s[4] = '\0';
-   }
+      strlcpy(s, "Min.", len);
    else if (freq == ~0U)
-   {
-      s[0] = 'M';
-      s[1] = 'a';
-      s[2] = 'x';
-      s[3] = '.';
-      s[4] = '\0';
-   }
+      strlcpy(s, "Max.", len);
    else
       snprintf(s, len, "%u MHz", freq / 1000);
 }
@@ -762,8 +779,8 @@ static void menu_action_setting_disp_set_label_core_lock(
     * > Note: We search core_info here instead of
     *   calling core_info_get_core_lock() since we
     *   don't want to perform disk access every frame */
-   if (core_info_find(path, &core_info) &&
-       core_info->is_locked)
+   if (   core_info_find(path, &core_info)
+       && core_info->is_locked)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
@@ -793,9 +810,9 @@ static void menu_action_setting_disp_set_label_core_set_standalone_exempt(
     *   calling core_info_get_core_standalone_exempt()
     *   since we don't want to perform disk access
     *   every frame */
-   if (core_info_find(path, &core_info) &&
-       core_info->supports_no_game &&
-       core_info->is_standalone_exempt)
+   if (   core_info_find(path, &core_info)
+       && core_info->supports_no_game
+       && core_info->is_standalone_exempt)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
@@ -833,15 +850,15 @@ static void menu_action_setting_disp_set_label_input_desc(
          if (remap_idx < RARCH_FIRST_CUSTOM_BIND) { }
          else if (remap_idx % 2 == 0)
          {
-            s[_len  ] = ' ';
-            s[_len+1] = '+';
-            s[_len+2] = '\0';
+            s[  _len] = ' ';
+            s[++_len] = '+';
+            s[++_len] = '\0';
          }
          else
          {
-            s[_len  ] = ' ';
-            s[_len+1] = '-';
-            s[_len+2] = '\0';
+            s[  _len] = ' ';
+            s[++_len] = '-';
+            s[++_len] = '\0';
          }
          return;
       }
@@ -883,8 +900,8 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
    if (key_descriptors[key_id].key != RETROK_FIRST)
    {
       /* TODO/FIXME - Localize */
-      strlcpy(s, "Keyboard ", len);
-      strlcat(s, key_descriptors[key_id].desc, len);
+      size_t _len = strlcpy(s, "Keyboard ", len);
+      strlcpy(s + _len, key_descriptors[key_id].desc, len - _len);
    }
    else
    {
@@ -911,22 +928,24 @@ static void menu_action_setting_disp_set_label_cheat(
 
    if (cheat_index < cheat_manager_get_buf_size())
    {
+      size_t _len = 
+         snprintf(s, len, "(%s) : ",
+                 cheat_manager_get_code_state(cheat_index)
+               ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)
+               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF));
+
       if (cheat_manager_state.cheats[cheat_index].handler == CHEAT_HANDLER_TYPE_EMU)
-         snprintf(s, len, "(%s) : %s",
-               cheat_manager_get_code_state(cheat_index) ?
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON) :
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
-               cheat_manager_get_code(cheat_index)
-               ? cheat_manager_get_code(cheat_index) :
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
-               );
+      {
+         const char *code = cheat_manager_get_code(cheat_index);
+         strlcpy(s + _len, 
+                 code 
+               ? code
+               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+               len - _len);
+      }
       else
-         snprintf(s, len, "(%s) : %08X",
-               cheat_manager_get_code_state(cheat_index) ?
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON) :
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
-               cheat_manager_state.cheats[cheat_index].address
-               );
+         snprintf(s + _len, len - _len, "%08X",
+               cheat_manager_state.cheats[cheat_index].address);
    }
    *w = 19;
    strlcpy(s2, path, len2);
@@ -946,6 +965,7 @@ static void menu_action_setting_disp_set_label_cheat_match(
    unsigned int curr_val     = 0;
    cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_VIEW, cheat_manager_state.match_idx, &address, &address_mask, &prev_val, &curr_val);
 
+   /* TODO/FIXME - localize */
    snprintf(s, len, "Prev: %u Curr: %u", prev_val, curr_val);
    *w = 19;
    strlcpy(s2, path, len2);
@@ -962,6 +982,7 @@ static void menu_action_setting_disp_set_label_perf_counters_common(
    if (!counters[offset]->call_cnt)
       return;
 
+   /* TODO/FIXME - localize */
    snprintf(s, len,
          "%" PRIu64 " ticks, %" PRIu64 " runs.",
          ((uint64_t)counters[offset]->total /
@@ -1118,22 +1139,22 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
       const char *path,
       char *s2, size_t len2)
 {
-   unsigned images             = 0;
-   unsigned current            = 0;
-   rarch_system_info_t *system = &runloop_state_get_ptr()->system;
+   unsigned images               = 0;
+   unsigned current              = 0;
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
 
-   if (!system)
+   if (!sys_info)
       return;
 
-   if (!disk_control_enabled(&system->disk_control))
+   if (!disk_control_enabled(&sys_info->disk_control))
       return;
 
    *w = 19;
    *s = '\0';
    strlcpy(s2, path, len2);
 
-   images  = disk_control_get_num_images(&system->disk_control);
-   current = disk_control_get_image_index(&system->disk_control);
+   images  = disk_control_get_num_images(&sys_info->disk_control);
+   current = disk_control_get_image_index(&sys_info->disk_control);
 
    if (current >= images)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_DISK), len);
@@ -1314,20 +1335,6 @@ static void menu_action_setting_disp_set_label_menu_file_overlay(
    MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
          path, "(OVERLAY)", STRLEN_CONST("(OVERLAY)"), s2, len2);
 }
-
-#ifdef HAVE_VIDEO_LAYOUT
-static void menu_action_setting_disp_set_label_menu_file_video_layout(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *path,
-      char *s2, size_t len2)
-{
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
-         path, "(LAYOUT)", STRLEN_CONST("(LAYOUT)"), s2, len2);
-}
-#endif
 
 static void menu_action_setting_disp_set_label_menu_file_config(
       file_list_t* list,
@@ -1841,6 +1848,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
       {
          case MENU_ENUM_LABEL_VIDEO_DRIVER:
          case MENU_ENUM_LABEL_AUDIO_DRIVER:
+#ifdef HAVE_MICROPHONE
+         case MENU_ENUM_LABEL_MICROPHONE_DRIVER:
+         case MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER:
+#endif
          case MENU_ENUM_LABEL_INPUT_DRIVER:
          case MENU_ENUM_LABEL_JOYPAD_DRIVER:
          case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
@@ -1877,6 +1888,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_REMAP_FILE_INFO:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_remap_file_info);
+            break;
+         case MENU_ENUM_LABEL_OVERRIDE_FILE_INFO:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_override_file_info);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -2154,15 +2169,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
                menu_action_setting_disp_set_label_menu_file_carchive);
          break;
       case FILE_TYPE_OVERLAY:
+      case FILE_TYPE_OSK_OVERLAY:
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_overlay);
          break;
-#ifdef HAVE_VIDEO_LAYOUT
-      case FILE_TYPE_VIDEO_LAYOUT:
-         BIND_ACTION_GET_VALUE(cbs,
-               menu_action_setting_disp_set_label_menu_file_video_layout);
-         break;
-#endif
       case FILE_TYPE_FONT:
       case FILE_TYPE_VIDEO_FONT:
          BIND_ACTION_GET_VALUE(cbs,
@@ -2247,9 +2257,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_entry);
          break;
       default:
-#if 0
-         RARCH_LOG("type: %d\n", type);
-#endif
          BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label);
          break;
    }
@@ -2258,14 +2265,16 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
 }
 
 int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx)
+      const char *path,
+      const char *label, size_t lbl_len,
+      unsigned type, size_t idx)
 {
    if (!cbs)
       return -1;
 
    if (  string_starts_with_size(
-            label, "input_player", STRLEN_CONST("input_player")) &&
-         string_ends_with_size(label, "joypad_index", strlen(label),
+            label, "input_player", STRLEN_CONST("input_player"))
+         && string_ends_with_size(label, "joypad_index", lbl_len,
                STRLEN_CONST("joypad_index"))
       )
    {

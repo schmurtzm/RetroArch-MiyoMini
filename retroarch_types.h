@@ -69,8 +69,6 @@ enum rarch_ctl_state
    RARCH_CTL_UNSET_BLOCK_CONFIG_READ,
 #endif
 
-   RARCH_CTL_HAS_SET_SUBSYSTEMS,
-
    RARCH_CTL_SET_WINDOWED_SCALE,
 
 #ifdef HAVE_CONFIGFILE
@@ -78,10 +76,6 @@ enum rarch_ctl_state
    RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE,
    RARCH_CTL_SET_REMAPS_GAME_ACTIVE,
 #endif
-
-   RARCH_CTL_IS_MISSING_BIOS,
-   RARCH_CTL_SET_MISSING_BIOS,
-   RARCH_CTL_UNSET_MISSING_BIOS,
 
    RARCH_CTL_SET_SHUTDOWN,
 
@@ -95,8 +89,6 @@ enum rarch_ctl_state
    RARCH_CTL_IS_PERFCNT_ENABLE,
 
    /* Core options */
-   RARCH_CTL_HAS_CORE_OPTIONS,
-   RARCH_CTL_GET_CORE_OPTION_SIZE,
    RARCH_CTL_CORE_OPTIONS_LIST_GET,
    RARCH_CTL_CORE_OPTION_PREV,
    RARCH_CTL_CORE_OPTION_NEXT,
@@ -132,6 +124,7 @@ enum rarch_override_setting
    RARCH_OVERRIDE_SETTING_IPS_PREF,
    RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE,
    RARCH_OVERRIDE_SETTING_LOG_TO_FILE,
+   RARCH_OVERRIDE_SETTING_DATABASE_SCAN,
    RARCH_OVERRIDE_SETTING_LAST
 };
 
@@ -186,6 +179,7 @@ typedef struct rarch_system_info
       unsigned size;
    } ports;
    unsigned rotation;
+   unsigned core_requested_rotation;
    unsigned performance_level;
    char valid_extensions[255];
    bool load_no_content;
@@ -230,11 +224,6 @@ typedef struct retro_ctx_serialize_info
    void *data;
    size_t size;
 } retro_ctx_serialize_info_t;
-
-typedef struct retro_ctx_size_info
-{
-   size_t size;
-} retro_ctx_size_info_t;
 
 typedef struct retro_callbacks
 {

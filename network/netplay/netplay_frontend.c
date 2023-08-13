@@ -138,6 +138,15 @@
 #define MITM_ADDR_MAGIC    0x52415441 /* RATA */
 #define MITM_PING_MAGIC    0x52415450 /* RATP */
 
+#if 0
+/* Activate this to enable assertions on code sections
+ * that should be exclusive to one modus */
+#include <assert.h>
+#define NETPLAY_ASSERT_MODUS(m) assert(networking_driver_st.data->modus==(m));
+#else
+#define NETPLAY_ASSERT_MODUS(m)
+#endif
+
 struct nick_buf_s
 {
    uint32_t cmd[2];
@@ -247,7 +256,12 @@ bool init_netplay_discovery(void)
    if (addr)
       freeaddrinfo_retro(addr);
 
+#ifdef HAVE_NETPLAYDISCOVERY_NSNET
+   netplay_mdns_start_discovery();
+   return true;
+#else
    return ret;
+#endif
 }
 
 /** Deinitialize Netplay discovery (client) */
@@ -260,6 +274,10 @@ void deinit_netplay_discovery(void)
       socket_close(net_st->lan_ad_client_fd);
       net_st->lan_ad_client_fd = -1;
    }
+
+#ifdef HAVE_NETPLAYDISCOVERY_NSNET
+   netplay_mdns_finish_discovery(net_st);
+#endif
 }
 
 static bool netplay_lan_ad_client_query(void)
@@ -418,7 +436,15 @@ bool netplay_discovery_driver_ctl(
    switch (state)
    {
       case RARCH_NETPLAY_DISCOVERY_CTL_LAN_SEND_QUERY:
-         return net_st->lan_ad_client_fd >= 0 && netplay_lan_ad_client_query();
+         {
+            bool rv = false;
+            if (net_st->lan_ad_client_fd >= 0)
+               rv = netplay_lan_ad_client_query();
+#if HAVE_NETPLAYDISCOVERY_NSNET
+            rv = true;
+#endif
+            return rv;
+         }
 
       case RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES:
          return net_st->lan_ad_client_fd >= 0 &&
@@ -509,12 +535,12 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
    {
       char frontend_architecture_tmp[24];
       const frontend_ctx_driver_t *frontend_drv;
-      uint32_t has_password             = 0;
-      struct ad_packet ad_packet_buffer = {0};
-      struct retro_system_info *system  =
+      uint32_t has_password              = 0;
+      struct ad_packet ad_packet_buffer  = {0};
+      struct retro_system_info *sysinfo  =
          &runloop_state_get_ptr()->system.info;
-      struct string_list *subsystem     = path_get_subsystem_list();
-      settings_t *settings              = config_get_ptr();
+      struct string_list *subsystem      = path_get_subsystem_list();
+      settings_t *settings               = config_get_ptr();
 
       /* Make sure it's a valid query */
       if (ntohl(header) != DISCOVERY_QUERY_MAGIC)
@@ -548,9 +574,9 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          strlcpy(ad_packet_buffer.frontend, "N/A",
             sizeof(ad_packet_buffer.frontend));
 
-      strlcpy(ad_packet_buffer.core, system->library_name,
+      strlcpy(ad_packet_buffer.core, sysinfo->library_name,
          sizeof(ad_packet_buffer.core));
-      strlcpy(ad_packet_buffer.core_version, system->library_version,
+      strlcpy(ad_packet_buffer.core_version, sysinfo->library_version,
          sizeof(ad_packet_buffer.core_version));
 
       strlcpy(ad_packet_buffer.retroarch_version, PACKAGE_VERSION,
@@ -675,6 +701,11 @@ static uint32_t simple_rand_uint32(unsigned long *simple_rand_next)
    return ((part0 << 30) + (part1 << 15) + part2);
 }
 
+static void netplay_send_cmd_netpacket(netplay_t *netplay, size_t conn_i,
+      const void* buf, size_t len, uint16_t client_id, bool broadcast);
+static void RETRO_CALLCONV netplay_netpacket_send_cb(int flags,
+      const void* buf, size_t len, uint16_t client_id, bool broadcast);
+
 /*
  * netplay_init_socket_buffer
  *
@@ -761,6 +792,7 @@ static bool netplay_handshake_init_send(netplay_t *netplay,
 #ifdef HAVE_MENU
 static void handshake_password(void *userdata, const char *line)
 {
+   size_t _len;
    struct password_buf_s password_buf;
    char password[8+NETPLAY_PASS_LEN]; /* 8 for salt, 128 for password */
    char hash[NETPLAY_PASS_HASH_LEN+1]; /* + NULL terminator */
@@ -772,10 +804,12 @@ static void handshake_password(void *userdata, const char *line)
       return;
 
    connection = &netplay->connections[0];
-
-   snprintf(password, sizeof(password), "%08lX", (unsigned long)connection->salt);
+   _len       = snprintf(password, sizeof(password),
+         "%08lX", (unsigned long)connection->salt);
    if (!string_is_empty(line))
-      strlcat(password, line, sizeof(password));
+      strlcpy(password       + _len,
+            line,
+            sizeof(password) - _len);
 
    password_buf.cmd[0] = htonl(NETPLAY_CMD_PASSWORD);
    password_buf.cmd[1] = htonl(sizeof(password_buf.password));
@@ -1873,6 +1907,12 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
 
    netplay->next_ping = cpu_features_get_time_usec() + NETPLAY_PING_AFTER;
 
+   /* Tell a core that uses the netpacket interface that the client is ready */
+   if (networking_driver_st.core_netpacket_interface &&
+         networking_driver_st.core_netpacket_interface->start)
+      networking_driver_st.core_netpacket_interface->start
+            ((uint16_t)netplay->self_client_num, netplay_netpacket_send_cb);
+
    /* Ask to switch to playing mode if we should */
    if (!settings->bools.netplay_start_as_spectator)
       return netplay_cmd_mode(netplay, NETPLAY_CONNECTION_PLAYING);
@@ -1913,6 +1953,7 @@ static bool netplay_handshake(netplay_t *netplay,
    }
 
    if (connection->mode >= NETPLAY_CONNECTION_CONNECTED &&
+         netplay->modus == NETPLAY_MODUS_INPUT_FRAME_SYNC &&
          !netplay_send_cur_input(netplay, connection))
       return false;
 
@@ -2004,6 +2045,7 @@ bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta,
 static uint32_t netplay_delta_frame_crc(netplay_t *netplay,
       struct delta_frame *delta)
 {
+   NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
    return encoding_crc32(0L, (const unsigned char*)delta->state,
          netplay->state_size);
 }
@@ -2058,6 +2100,8 @@ static netplay_input_state_t netplay_input_state_for(
       bool must_create, bool must_not_create)
 {
    netplay_input_state_t ret;
+   NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
+
    while (*list)
    {
       ret = *list;
@@ -2083,7 +2127,7 @@ static netplay_input_state_t netplay_input_state_for(
    /* Couldn't find a slot, allocate a fresh one */
    if (size > 1)
       ret = (netplay_input_state_t)calloc(1, sizeof(struct netplay_input_state) + (size-1) * sizeof(uint32_t));
-	else
+   else
       ret = (netplay_input_state_t)calloc(1, sizeof(struct netplay_input_state));
    if (!ret)
       return NULL;
@@ -2103,6 +2147,7 @@ static uint32_t netplay_expected_input_size(netplay_t *netplay,
       uint32_t devices)
 {
    uint32_t ret = 0, device;
+   NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
    for (device = 0; device < MAX_INPUT_DEVICES; device++)
    {
@@ -2539,6 +2584,7 @@ static bool netplay_cmd_crc(netplay_t *netplay, struct delta_frame *delta)
    size_t i;
    uint32_t payload[2];
    bool success = true;
+   NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
    payload[0]   = htonl(delta->frame);
    payload[1]   = htonl(delta->crc);
@@ -2580,6 +2626,7 @@ static bool netplay_cmd_stall(netplay_t *netplay,
    struct netplay_connection *connection,
    uint32_t frames)
 {
+   NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
    frames = htonl(frames);
    return netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_STALL, &frames, sizeof(frames));
 }
@@ -2904,6 +2951,7 @@ static bool netplay_resolve_input(netplay_t *netplay,
    bool ret                     = false;
    struct delta_frame *pframe   = NULL;
    struct delta_frame *simframe = &netplay->buffer[sim_ptr];
+   NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
    for (device = 0; device < MAX_INPUT_DEVICES; device++)
    {
@@ -3058,6 +3106,7 @@ static bool netplay_resolve_input(netplay_t *netplay,
 static void netplay_handle_frame_hash(netplay_t *netplay,
       struct delta_frame *delta)
 {
+   NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
    if (netplay->is_server)
    {
       if (netplay->check_frames && (delta->frame % netplay->check_frames) == 0)
@@ -3443,7 +3492,7 @@ static int handle_mitm_connection(netplay_t *netplay, netplay_address_t *addr,
             netplay->mitm_handler->id_recvd = 0;
 
             if (socket_send_all_nonblocking(netplay->listen_fd,
-                  ping, len, true) != len)
+                  ping, len, true) != (ssize_t)len)
             {
                /* We couldn't send our ping reply in one call. Assume error. */
                RARCH_ERR("[Netplay] Tunnel ping reply failed.\n");
@@ -3537,8 +3586,9 @@ static bool netplay_sync_pre_frame(netplay_t *netplay)
 {
    bool ret = true;
 
-   if (netplay->run_frame_count > 0 && netplay_delta_frame_ready(netplay,
-         &netplay->buffer[netplay->run_ptr], netplay->run_frame_count))
+   if (netplay->modus == NETPLAY_MODUS_INPUT_FRAME_SYNC &&
+       netplay->run_frame_count > 0 && netplay_delta_frame_ready(netplay,
+            &netplay->buffer[netplay->run_ptr], netplay->run_frame_count))
    {
       /* Don't serialize until it's safe. */
       if (!(netplay->quirks & NETPLAY_QUIRK_INITIALIZATION))
@@ -3650,16 +3700,17 @@ process:
 }
 
 /**
- * netplay_sync_post_frame
+ * netplay_sync_input_post_frame
  * @netplay              : pointer to netplay object
  * @stalled              : true if we're currently stalled
  *
  * Post-frame for Netplay synchronization.
  * We check if we have new input and replay from recorded input.
  */
-static void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
+static void netplay_sync_input_post_frame(netplay_t *netplay, bool stalled)
 {
    uint32_t lo_frame_count, hi_frame_count;
+   NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
    /* Unless we're stalling, we've just finished running a frame */
    if (!stalled)
@@ -4064,6 +4115,12 @@ static void netplay_hangup(netplay_t *netplay,
 #endif
    }
 
+   if (networking_driver_st.core_netpacket_interface
+         && was_playing && netplay->is_server
+         && networking_driver_st.core_netpacket_interface->disconnected)
+      networking_driver_st.core_netpacket_interface->disconnected
+            ((uint16_t)(connection - netplay->connections + 1));
+
    RARCH_LOG("[Netplay] %s\n", dmsg);
    /* This notification is really only important to the server if the client was playing.
     * Let it be optional if server and the client wasn't playing. */
@@ -4176,6 +4233,7 @@ static bool send_input_frame(netplay_t *netplay, struct delta_frame *dframe,
    buffer[0]        = htonl(NETPLAY_CMD_INPUT);
    buffer[2]        = htonl(dframe->frame);
    buffer[3]        = htonl(client_num);
+   NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
    /* Add the device data */
    devices = netplay->client_devices[client_num];
@@ -4244,6 +4302,7 @@ bool netplay_send_cur_input(netplay_t *netplay,
    struct netplay_connection *connection)
 {
    struct delta_frame *dframe = &netplay->buffer[netplay->self_ptr];
+   NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
    if (netplay->is_server)
    {
@@ -4428,8 +4487,9 @@ static uint8_t netplay_settings_share_mode(
 static void announce_play_spectate(netplay_t *netplay,
       const char *nick,
       enum rarch_netplay_connection_mode mode, uint32_t devices,
-      int32_t ping)
+      int32_t ping, uint32_t client_num)
 {
+   size_t _len;
    char msg[512];
    const char *dmsg = NULL;
 
@@ -4455,16 +4515,21 @@ static void announce_play_spectate(netplay_t *netplay,
          uint32_t one_device = (uint32_t) -1;
          char *pdevice_str   = NULL;
 
-         for (device = 0; device < MAX_INPUT_DEVICES; device++)
+         if (netplay->modus == NETPLAY_MODUS_CORE_PACKET_INTERFACE)
+            one_device = client_num;
+         else
          {
-            if (!(devices & (1<<device)))
-               continue;
-            if (one_device == (uint32_t) -1)
-               one_device = device;
-            else
+            for (device = 0; device < MAX_INPUT_DEVICES; device++)
             {
-               one_device = (uint32_t) -1;
-               break;
+               if (!(devices & (1<<device)))
+                  continue;
+               if (one_device == (uint32_t) -1)
+                  one_device = device;
+               else
+               {
+                  one_device = (uint32_t) -1;
+                  break;
+               }
             }
          }
 
@@ -4472,11 +4537,11 @@ static void announce_play_spectate(netplay_t *netplay,
          {
             /* Only have one device, simpler message */
             if (nick)
-               snprintf(msg, sizeof(msg),
+               _len = snprintf(msg, sizeof(msg),
                   msg_hash_to_str(MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N),
                   NETPLAY_NICK_LEN, nick, one_device + 1);
             else
-               snprintf(msg, sizeof(msg),
+               _len = snprintf(msg, sizeof(msg),
                   msg_hash_to_str(MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N),
                   one_device + 1);
          }
@@ -4498,11 +4563,11 @@ static void announce_play_spectate(netplay_t *netplay,
 
             /* Then we make the final string */
             if (nick)
-               snprintf(msg, sizeof(msg),
+               _len = snprintf(msg, sizeof(msg),
                   msg_hash_to_str(MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S),
                   NETPLAY_NICK_LEN, nick, sizeof(device_str), device_str);
             else
-               snprintf(msg, sizeof(msg),
+               _len = snprintf(msg, sizeof(msg),
                   msg_hash_to_str(MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S),
                   sizeof(device_str), device_str);
          }
@@ -4511,7 +4576,7 @@ static void announce_play_spectate(netplay_t *netplay,
          {
             snprintf(ping_str, sizeof(ping_str), " (ping: %i ms)",
                (int)ping);
-            strlcat(msg, ping_str, sizeof(msg));
+            strlcpy(msg + _len, ping_str, sizeof(msg) - _len);
          }
 
          dmsg = msg;
@@ -4543,6 +4608,7 @@ static void handle_play_spectate(netplay_t *netplay,
    {
       case NETPLAY_CMD_SPECTATE:
          {
+            NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
             if (cmd_size || in_payload)
                return;
 
@@ -4575,7 +4641,7 @@ static void handle_play_spectate(netplay_t *netplay,
                   NETPLAY_CMD_MODE, &payload, sizeof(payload));
 
                announce_play_spectate(netplay, connection->nick,
-                  NETPLAY_CONNECTION_SPECTATING, 0, -1);
+                  NETPLAY_CONNECTION_SPECTATING, 0, -1, client_num);
             }
             else
             {
@@ -4586,7 +4652,7 @@ static void handle_play_spectate(netplay_t *netplay,
                netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
 
                announce_play_spectate(netplay, NULL,
-                  NETPLAY_CONNECTION_SPECTATING, 0, -1);
+                  NETPLAY_CONNECTION_SPECTATING, 0, -1, client_num);
 
                /* It was the server, so tell everyone else */
                netplay_send_raw_cmd_all(netplay, NULL,
@@ -4620,7 +4686,12 @@ static void handle_play_spectate(netplay_t *netplay,
                share_mode &= ~NETPLAY_SHARE_NO_PREFERENCE;
             }
 
-            if (devices)
+            if (netplay->modus == NETPLAY_MODUS_CORE_PACKET_INTERFACE)
+            {
+               /* no device needs to be assigned with netpacket interface */
+               devices = 0;
+            }
+            else if (devices)
             {
                /* Make sure the devices are available and/or shareable */
                for (i = 0; i < MAX_INPUT_DEVICES; i++)
@@ -4746,7 +4817,10 @@ static void handle_play_spectate(netplay_t *netplay,
 
                if (settings->bools.netplay_allow_slaves)
                {
-                  if (settings->bools.netplay_require_slaves)
+                  /* Slave mode unused when core uses netpacket interface */
+                  if (netplay->modus == NETPLAY_MODUS_CORE_PACKET_INTERFACE)
+                     slave = false;
+                  else if (settings->bools.netplay_require_slaves)
                      slave = true;
                   else
                      slave = (mode & NETPLAY_CMD_PLAY_BIT_SLAVE) ?
@@ -4774,12 +4848,27 @@ static void handle_play_spectate(netplay_t *netplay,
 
                payload.mode = htonl(mode | NETPLAY_CMD_MODE_BIT_YOU);
 
+               if (networking_driver_st.core_netpacket_interface
+                   && networking_driver_st.core_netpacket_interface->connected
+                   && !networking_driver_st.core_netpacket_interface->connected(
+                         (uint16_t)(connection - netplay->connections + 1)))
+               {
+                  /* core wants us to drop this new client */
+                   uint32_t reason = htonl(
+                      NETPLAY_CMD_MODE_REFUSED_REASON_OTHER);
+                  connection->mode = NETPLAY_CONNECTION_CONNECTED;
+                   netplay_send_raw_cmd(netplay, connection,
+                      NETPLAY_CMD_MODE_REFUSED, &reason, sizeof(reason));
+                   netplay_hangup(netplay, connection);
+                   return;
+               }
+
                /* Tell the player */
                netplay_send_raw_cmd(netplay, connection,
                   NETPLAY_CMD_MODE, &payload, sizeof(payload));
 
                announce_play_spectate(netplay, connection->nick,
-                  connection->mode, devices, connection->ping);
+                  connection->mode, devices, connection->ping, client_num);
             }
             else
             {
@@ -4797,7 +4886,7 @@ static void handle_play_spectate(netplay_t *netplay,
                netplay->self_mode = NETPLAY_CONNECTION_PLAYING;
 
                announce_play_spectate(netplay, NULL,
-                  netplay->self_mode, devices, -1);
+                  netplay->self_mode, devices, -1, client_num);
             }
 
             payload.mode = htonl(mode);
@@ -5175,6 +5264,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
          {
             uint32_t frame_num, client_num, input_size, devices, device;
             struct delta_frame *dframe;
+            NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
             if (cmd_size < 2*sizeof(uint32_t))
             {
@@ -5312,6 +5402,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
       case NETPLAY_CMD_NOINPUT:
          {
             uint32_t frame;
+            NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
             if (netplay->is_server)
             {
@@ -5353,6 +5444,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
       case NETPLAY_CMD_SPECTATE:
       {
          uint32_t client_num;
+         NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
          if (!netplay->is_server)
          {
@@ -5508,7 +5600,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
             /* A change to me! */
             if (mode & NETPLAY_CMD_MODE_BIT_PLAYING)
             {
-               if (frame != netplay->server_frame_count)
+               /* When a core uses the netpacket interface this is OK */
+               if (frame != netplay->server_frame_count
+                     && netplay->modus != NETPLAY_MODUS_CORE_PACKET_INTERFACE)
                {
                   RARCH_ERR("[Netplay] Received mode change out of order.\n");
                   return netplay_cmd_nak(netplay, connection);
@@ -5537,66 +5631,69 @@ static bool netplay_get_cmd(netplay_t *netplay,
                netplay->read_ptr[client_num] = netplay->server_ptr;
                netplay->read_frame_count[client_num] = netplay->server_frame_count;
 
-               /* Fix up current frame info */
-               if (frame <= netplay->self_frame_count &&
-                     netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
+               if (netplay->modus == NETPLAY_MODUS_INPUT_FRAME_SYNC)
                {
-                  /* It wanted past frames, better send 'em! */
-                  START(netplay->server_ptr);
-                  while (dframe->used && dframe->frame <= netplay->self_frame_count)
+                  /* Fix up current frame info */
+                  if (frame <= netplay->self_frame_count &&
+                        netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
                   {
-                     for (device = 0; device < MAX_INPUT_DEVICES; device++)
+                     /* It wanted past frames, better send 'em! */
+                     START(netplay->server_ptr);
+                     while (dframe->used && dframe->frame <= netplay->self_frame_count)
                      {
-                        uint32_t dsize;
-                        netplay_input_state_t istate;
-                        if (!(devices & (1<<device)))
-                           continue;
-                        dsize = netplay_expected_input_size(netplay, 1 << device);
-                        istate = netplay_input_state_for(
-                              &dframe->real_input[device], client_num, dsize,
-                              false, false);
-                        if (!istate)
-                           continue;
-                        memset(istate->data, 0, dsize*sizeof(uint32_t));
-                     }
-                     dframe->have_local = true;
-                     dframe->have_real[client_num] = true;
-                     send_input_frame(netplay, dframe, connection, NULL, client_num, false);
-                     if (dframe->frame == netplay->self_frame_count) break;
-                     NEXT();
-                  }
-               }
-               else
-               {
-                  uint32_t frame_count;
-
-                  /* It wants future frames, make sure we don't capture or send intermediate ones */
-                  START(netplay->self_ptr);
-                  frame_count = netplay->self_frame_count;
-
-                  do
-                  {
-                     if (!dframe->used)
-                     {
-                        /* Make sure it's ready */
-                        if (!netplay_delta_frame_ready(netplay, dframe, frame_count))
+                        for (device = 0; device < MAX_INPUT_DEVICES; device++)
                         {
-                           RARCH_ERR("[Netplay] Received mode change but delta frame isn't ready!\n");
-                           return netplay_cmd_nak(netplay, connection);
+                           uint32_t dsize;
+                           netplay_input_state_t istate;
+                           if (!(devices & (1<<device)))
+                              continue;
+                           dsize = netplay_expected_input_size(netplay, 1 << device);
+                           istate = netplay_input_state_for(
+                                 &dframe->real_input[device], client_num, dsize,
+                                 false, false);
+                           if (!istate)
+                              continue;
+                           memset(istate->data, 0, dsize*sizeof(uint32_t));
                         }
+                        dframe->have_local = true;
+                        dframe->have_real[client_num] = true;
+                        send_input_frame(netplay, dframe, connection, NULL, client_num, false);
+                        if (dframe->frame == netplay->self_frame_count) break;
+                        NEXT();
                      }
+                  }
+                  else
+                  {
+                     uint32_t frame_count;
 
-                     dframe->have_local = true;
+                     /* It wants future frames, make sure we don't capture or send intermediate ones */
+                     START(netplay->self_ptr);
+                     frame_count = netplay->self_frame_count;
 
-                     /* Go on to the next delta frame */
-                     NEXT();
-                     frame_count++;
-                  } while (frame_count < frame);
+                     do
+                     {
+                        if (!dframe->used)
+                        {
+                           /* Make sure it's ready */
+                           if (!netplay_delta_frame_ready(netplay, dframe, frame_count))
+                           {
+                              RARCH_ERR("[Netplay] Received mode change but delta frame isn't ready!\n");
+                              return netplay_cmd_nak(netplay, connection);
+                           }
+                        }
+
+                        dframe->have_local = true;
+
+                        /* Go on to the next delta frame */
+                        NEXT();
+                        frame_count++;
+                     } while (frame_count < frame);
+                  }
                }
 
                /* Announce it */
                announce_play_spectate(netplay, NULL, netplay->self_mode, devices,
-                  connection->ping);
+                  connection->ping, client_num);
 
 #ifdef DEBUG_NETPLAY_STEPS
                RARCH_LOG("[Netplay] Received mode change self->%X\n", devices);
@@ -5623,7 +5720,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
             /* Somebody else is joining or parting */
             if (mode & NETPLAY_CMD_MODE_BIT_PLAYING)
             {
-               if (frame != netplay->server_frame_count)
+               /* When a core uses the netpacket interface this is OK */
+               if (frame != netplay->server_frame_count
+                     && netplay->modus != NETPLAY_MODUS_CORE_PACKET_INTERFACE)
                {
                   RARCH_ERR("[Netplay] Received mode change out of order.\n");
                   return netplay_cmd_nak(netplay, connection);
@@ -5639,7 +5738,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                netplay->read_frame_count[client_num] = netplay->server_frame_count;
 
                /* Announce it */
-               announce_play_spectate(netplay, nick, NETPLAY_CONNECTION_PLAYING, devices, -1);
+               announce_play_spectate(netplay, nick, NETPLAY_CONNECTION_PLAYING, devices, -1, client_num);
 
 #ifdef DEBUG_NETPLAY_STEPS
                RARCH_LOG("[Netplay] Received mode change %u->%u\n", client_num, devices);
@@ -5654,7 +5753,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   netplay->device_clients[device] &= ~(1<<client_num);
 
                /* Announce it */
-               announce_play_spectate(netplay, nick, NETPLAY_CONNECTION_SPECTATING, 0, -1);
+               announce_play_spectate(netplay, nick, NETPLAY_CONNECTION_SPECTATING, 0, -1, client_num);
 
 #ifdef DEBUG_NETPLAY_STEPS
                RARCH_LOG("[Netplay] Received mode change %u->spectator\n", client_num);
@@ -5718,6 +5817,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             uint32_t buffer[2];
             size_t tmp_ptr = netplay->run_ptr;
             bool found = false;
+            NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
             if (cmd_size != sizeof(buffer))
             {
@@ -5773,6 +5873,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
          }
 
       case NETPLAY_CMD_REQUEST_SAVESTATE:
+         NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
          /* Delay until next frame so we don't send the savestate after the
           * input */
          netplay->force_send_savestate = true;
@@ -5787,6 +5888,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             uint32_t load_frame_count;
             uint32_t rd, wn;
             struct compression_transcoder *ctrans = NULL;
+            NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
             if (netplay->is_server)
             {
@@ -5937,6 +6039,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             uint32_t frame;
             size_t   reset_ptr;
             uint32_t reset_frame_count;
+            NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
             if (netplay->is_server)
             {
@@ -6033,6 +6136,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
       case NETPLAY_CMD_PAUSE:
          {
             char msg[512], nick[NETPLAY_NICK_LEN];
+            NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
             /* Read in the paused nick */
             if (cmd_size != sizeof(nick))
@@ -6085,12 +6189,14 @@ static bool netplay_get_cmd(netplay_t *netplay,
          }
 
       case NETPLAY_CMD_RESUME:
+         NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
          remote_unpaused(netplay, connection);
          break;
 
       case NETPLAY_CMD_STALL:
          {
             uint32_t frames;
+            NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
             if (netplay->is_server)
             {
@@ -6119,6 +6225,68 @@ static bool netplay_get_cmd(netplay_t *netplay,
                connection->stall = netplay->stall = NETPLAY_STALL_SERVER_REQUESTED;
                netplay->stall_time = 0;
                connection->stall_frame = frames;
+            }
+            break;
+         }
+
+      case NETPLAY_CMD_NETPACKET:
+      case NETPLAY_CMD_NETPACKET_BROADCAST:
+         {
+            uint32_t pkt_client_id;
+            void* buf = netplay->zbuffer;
+            NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_CORE_PACKET_INTERFACE);
+
+            if (!networking_driver_st.core_netpacket_interface)
+            {
+               RARCH_ERR("[Netplay] NETPLAY_CMD_NETPACKET while core netpacket interface is not set.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
+            if (cmd_size > netplay->zbuffer_size)
+            {
+               RARCH_ERR("[Netplay] Received netpacket of unexpected size.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
+
+            RECV(&pkt_client_id, sizeof(pkt_client_id))
+               return false;
+            pkt_client_id = ntohl(pkt_client_id);
+            RECV(buf, cmd_size)
+               return false;
+
+            if (!netplay->is_server)
+            {
+               /* packets arriving at a client are always meant for us */
+               if (networking_driver_st.core_netpacket_interface->receive)
+                  networking_driver_st.core_netpacket_interface->receive
+                     (buf, cmd_size, (uint16_t)pkt_client_id);
+            }
+            else
+            {
+               bool broadcast = (cmd == NETPLAY_CMD_NETPACKET_BROADCAST);
+               uint16_t incoming_client_id =
+                     (uint16_t)(connection - netplay->connections + 1);
+
+               /* check if this is a packet for the host */
+               if ((broadcast ? pkt_client_id : !pkt_client_id)
+                     && networking_driver_st.core_netpacket_interface->receive)
+                  networking_driver_st.core_netpacket_interface->receive
+                     (buf, cmd_size, incoming_client_id);
+
+               if (broadcast)
+               {
+                  /* relay to all but designated client and incoming client */
+                  size_t i, skip1 = pkt_client_id, skip2 = incoming_client_id;
+                  for (i = 0; i < netplay->connections_size; i++)
+                     if (i+1 != skip1 && i+1 != skip2)
+                         netplay_send_cmd_netpacket(netplay, i,
+                            buf, cmd_size, incoming_client_id, false);
+               }
+               else if (pkt_client_id && pkt_client_id != incoming_client_id)
+               {
+                  /* relay unless target is the host or the incoming client */
+                  netplay_send_cmd_netpacket(netplay, pkt_client_id-1,
+                     buf, cmd_size, incoming_client_id, false);
+               }
             }
             break;
          }
@@ -6317,6 +6485,8 @@ static void netplay_handle_slaves(netplay_t *netplay)
 {
    struct delta_frame *frame = &netplay->buffer[netplay->self_ptr];
    size_t i;
+   NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
+
    for (i = 0; i < netplay->connections_size; i++)
    {
       struct netplay_connection *connection = &netplay->connections[i];
@@ -6696,7 +6866,12 @@ try_ipv4:
       netplay->connections[0].fd     = fd;
    }
    else
+   {
       netplay->listen_fd             = fd;
+#ifdef HAVE_NETPLAYDISCOVERY_NSNET
+      netplay_mdns_publish(netplay);
+#endif
+   }
 
    return true;
 }
@@ -6740,15 +6915,22 @@ static bool netplay_init_socket_buffers(netplay_t *netplay)
 static bool netplay_init_serialization(netplay_t *netplay)
 {
    size_t i;
-   retro_ctx_size_info_t info = {0};
 
    if (netplay->state_size)
       return true;
 
-   core_serialize_size_special(&info);
-   if (!info.size)
-      return false;
-   netplay->state_size = info.size;
+   if (netplay->modus == NETPLAY_MODUS_CORE_PACKET_INTERFACE)
+   {
+      /* max core netpacket size is 64 kb, hold 2 of them */
+      netplay->state_size = 64*1024*2;
+   }
+   else
+   {
+      size_t info_size = core_serialize_size_special();
+      if (!info_size)
+         return false;
+      netplay->state_size = info_size;
+   }
 
    for (i = 0; i < netplay->buffer_size; i++)
    {
@@ -6945,7 +7127,8 @@ static void netplay_free(netplay_t *netplay)
 static netplay_t *netplay_new(const char *server, const char *mitm,
       uint16_t port, const char *mitm_session,
       uint32_t check_frames, const struct retro_callbacks *cb,
-      bool nat_traversal, const char *nick, uint32_t quirks)
+      bool nat_traversal, const char *nick, uint32_t quirks,
+      enum netplay_modus modus)
 {
    netplay_t *netplay        = (netplay_t*)calloc(1, sizeof(*netplay));
 
@@ -6956,6 +7139,7 @@ static netplay_t *netplay_new(const char *server, const char *mitm,
    netplay->check_frames     = check_frames;
    netplay->cbs              = *cb;
    netplay->quirks           = quirks;
+   netplay->modus            = modus;
    netplay->crcs_valid       = true;
    netplay->listen_fd        = -1;
    netplay->next_announce    = -1;
@@ -7125,6 +7309,12 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
    size_t i;
    uint32_t paused_ct    = 0;
 
+   /* When a core uses the netpacket interface netplay doesn't control pause.
+    * We need this because even if RARCH_NETPLAY_CTL_ALLOW_PAUSE returns false
+    * on some platforms the frontend may try to force netplay to pause. */
+   if (netplay->modus == NETPLAY_MODUS_CORE_PACKET_INTERFACE)
+      return;
+
    netplay->local_paused = paused;
 
    /* Communicating this is a bit odd: If exactly one other connection is
@@ -7247,6 +7437,7 @@ void netplay_load_savestate(netplay_t *netplay,
       retro_ctx_serialize_info_t *serial_info, bool save)
 {
    retro_ctx_serialize_info_t tmp_serial_info = {0};
+   NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
    if (!serial_info)
       save = true;
@@ -7305,7 +7496,8 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
             if (!netplay->is_server)
             {
                int i;
-               uint32_t client_mask = ~(1 << netplay->self_client_num);
+               uint32_t client_num = netplay->self_client_num;
+               uint32_t client_mask = ~(1 << client_num);
 
                netplay->connected_players &= client_mask;
 
@@ -7317,7 +7509,7 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
                netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
 
                announce_play_spectate(netplay, NULL,
-                  NETPLAY_CONNECTION_SPECTATING, 0, -1);
+                  NETPLAY_CONNECTION_SPECTATING, 0, -1, client_num);
             }
 
             netplay_cmd_mode(netplay, NETPLAY_CONNECTION_SPECTATING);
@@ -7428,6 +7620,7 @@ static bool get_self_input_state(
    struct delta_frame *ptr        = &netplay->buffer[netplay->self_ptr];
    netplay_input_state_t istate   = NULL;
    uint32_t devices, used_devices = 0, devi, dev_type, local_device;
+   NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
    if (!netplay_delta_frame_ready(netplay, ptr, netplay->self_frame_count))
       return false;
@@ -7578,6 +7771,26 @@ static bool get_self_input_state(
 static bool netplay_poll(netplay_t *netplay, bool block_libretro_input)
 {
    size_t i;
+
+   /* Use simplified polling loop when a core uses the netpacket interface. */
+   if (netplay->modus == NETPLAY_MODUS_CORE_PACKET_INTERFACE)
+   {
+      if (netplay->self_mode == NETPLAY_CONNECTION_NONE)
+         return true;
+
+      /* Read netplay input. */
+      netplay_poll_net_input(netplay);
+
+      /* Handle any delayed state changes */
+      if (netplay->is_server)
+         netplay_delayed_state_change(netplay);
+
+      if (networking_driver_st.core_netpacket_interface
+            && networking_driver_st.core_netpacket_interface->poll
+            && netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
+         networking_driver_st.core_netpacket_interface->poll();
+      return true;
+   }
 
    if (!get_self_input_state(block_libretro_input, netplay))
       goto catastrophe;
@@ -8373,12 +8586,13 @@ static bool netplay_pre_frame(netplay_t *netplay)
       }
    }
 
-   if ((netplay->stall || netplay->remote_paused) &&
-         (!netplay->is_server || netplay->connected_players > 1))
+   if ((netplay->stall || netplay->remote_paused)
+         && (!netplay->is_server || netplay->connected_players > 1)
+         && netplay->modus == NETPLAY_MODUS_INPUT_FRAME_SYNC)
    {
       /* We may have received data even if we're stalled,
        * so run post-frame sync. */
-      netplay_sync_post_frame(netplay, true);
+      netplay_sync_input_post_frame(netplay, true);
       return false;
    }
 
@@ -8397,8 +8611,12 @@ static void netplay_post_frame(netplay_t *netplay)
 {
    size_t i;
 
-   netplay_update_unread_ptr(netplay);
-   netplay_sync_post_frame(netplay, false);
+   /* When a core uses the netpacket interface frames are not synced */
+   if (netplay->modus == NETPLAY_MODUS_INPUT_FRAME_SYNC)
+   {
+      netplay_update_unread_ptr(netplay);
+      netplay_sync_input_post_frame(netplay, false);
+   }
 
    for (i = 0; i < netplay->connections_size; i++)
    {
@@ -8430,11 +8648,23 @@ void deinit_netplay(void)
 
 #ifdef HAVE_NETPLAYDISCOVERY
       deinit_lan_ad_server_socket();
+#ifdef HAVE_NETPLAYDISCOVERY_NSNET
+      netplay_mdns_unpublish();
+#endif
 #endif
 
       net_st->data              = NULL;
       net_st->flags            &= ~(NET_DRIVER_ST_FLAG_NETPLAY_ENABLED
                                 |   NET_DRIVER_ST_FLAG_NETPLAY_IS_CLIENT);
+
+#if HAVE_RUNAHEAD
+      /* Reinitialize preemptive frames if enabled */
+      preempt_init(runloop_state_get_ptr());
+#endif
+
+      if (net_st->core_netpacket_interface
+            && net_st->core_netpacket_interface->stop)
+         net_st->core_netpacket_interface->stop();
    }
 
    free(net_st->client_info);
@@ -8454,6 +8684,7 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
    net_driver_state_t *net_st     = &networking_driver_st;
    struct netplay_room *host_room = &net_st->host_room;
    const char *mitm               = NULL;
+   enum netplay_modus modus       = NETPLAY_MODUS_INPUT_FRAME_SYNC;
 
    if (!(net_st->flags & NET_DRIVER_ST_FLAG_NETPLAY_ENABLED))
       return false;
@@ -8464,9 +8695,13 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
 
    serialization_quirks = core_serialization_quirks();
 
-   if (!core_info_current_supports_netplay() ||
+   if (net_st->core_netpacket_interface)
+      modus = NETPLAY_MODUS_CORE_PACKET_INTERFACE;
+
+   if ((!core_info_current_supports_netplay() ||
          serialization_quirks & (RETRO_SERIALIZATION_QUIRK_INCOMPLETE |
             RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION))
+         && modus != NETPLAY_MODUS_CORE_PACKET_INTERFACE)
    {
       RARCH_ERR("[Netplay] %s\n", msg_hash_to_str(MSG_NETPLAY_UNSUPPORTED));
       runloop_msg_queue_push(
@@ -8537,7 +8772,7 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
       :
 #endif
       settings->paths.username,
-      quirks);
+      quirks, modus);
    if (!netplay)
       goto failure;
 
@@ -8585,6 +8820,11 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
       netplay->connections[0].mode = NETPLAY_CONNECTION_INIT;
       netplay->self_mode           = NETPLAY_CONNECTION_INIT;
    }
+
+   /* Tell a core that uses the netpacket interface that the host is ready */
+   if (netplay->is_server && net_st->core_netpacket_interface &&
+         net_st->core_netpacket_interface->start)
+      net_st->core_netpacket_interface->start(0, netplay_netpacket_send_cb);
 
    return true;
 
@@ -8739,6 +8979,18 @@ static bool kick_client_by_id_and_name(netplay_t *netplay,
    netplay_hangup(netplay, connection);
 
    return true;
+}
+
+static bool netplay_have_any_active_connection(netplay_t *netplay)
+{
+   size_t i;
+   if (!netplay || !netplay->is_server)
+      return (netplay && netplay->self_mode >= NETPLAY_CONNECTION_CONNECTED);
+   for (i = 0; i < netplay->connections_size; i++)
+      if (     (netplay->connections[i].flags & NETPLAY_CONN_FLAG_ACTIVE)
+            && (netplay->connections[i].mode >= NETPLAY_CONNECTION_CONNECTED))
+         return true;
+   return false;
 }
 
 /**
@@ -8908,7 +9160,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          break;
 
       case RARCH_NETPLAY_CTL_GAME_WATCH:
-         if (netplay)
+         if (netplay && netplay->modus != NETPLAY_MODUS_CORE_PACKET_INTERFACE)
             netplay_toggle_play_spectate(netplay);
          else
             ret = false;
@@ -8922,7 +9174,9 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          break;
 
       case RARCH_NETPLAY_CTL_ALLOW_PAUSE:
-         ret = (!netplay || netplay->allow_pausing);
+         ret = (!netplay || (netplay->allow_pausing &&
+                  (netplay->modus != NETPLAY_MODUS_CORE_PACKET_INTERFACE ||
+                     !netplay_have_any_active_connection(netplay))));
          break;
 
       case RARCH_NETPLAY_CTL_PAUSE:
@@ -8937,13 +9191,13 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          break;
 
       case RARCH_NETPLAY_CTL_LOAD_SAVESTATE:
-         if (netplay)
+         if (netplay && netplay->modus != NETPLAY_MODUS_CORE_PACKET_INTERFACE)
             netplay_load_savestate(netplay,
                (retro_ctx_serialize_info_t*)data, true);
          break;
 
       case RARCH_NETPLAY_CTL_RESET:
-         if (netplay)
+         if (netplay && netplay->modus != NETPLAY_MODUS_CORE_PACKET_INTERFACE)
             netplay_core_reset(netplay);
          break;
 
@@ -8961,7 +9215,12 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 
       case RARCH_NETPLAY_CTL_DESYNC_PUSH:
          if (netplay)
-            netplay->desync++;
+         {
+            if (netplay->modus != NETPLAY_MODUS_CORE_PACKET_INTERFACE)
+               netplay->desync++;
+            else if (netplay_have_any_active_connection(netplay))
+               ret = false;
+         }
          break;
 
       case RARCH_NETPLAY_CTL_DESYNC_POP:
@@ -9018,6 +9277,47 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          }
          else
             ret = false;
+         break;
+
+      case RARCH_NETPLAY_CTL_SET_CORE_PACKET_INTERFACE:
+         if (!net_st->core_netpacket_interface && data && netplay)
+         {
+            /* it's too late to enable the interface */
+            ret = false;
+            break;
+         }
+
+         if (net_st->core_netpacket_interface)
+         {
+            if (data && !memcmp(net_st->core_netpacket_interface,
+                  data, sizeof(*net_st->core_netpacket_interface)))
+               break; /* interface is not modified */
+
+            free(net_st->core_netpacket_interface);
+            net_st->core_netpacket_interface = NULL;
+         }
+
+         if (data)
+         {
+            /* copy passed interface to local state */
+            net_st->core_netpacket_interface = (struct retro_netpacket_callback*)
+               malloc(sizeof(*net_st->core_netpacket_interface));
+            *net_st->core_netpacket_interface = *(struct retro_netpacket_callback*)data;
+            /* reset savefile dir as core_netpacket_interface affects it */
+            runloop_path_set_redirect(config_get_ptr(),
+               dir_get_ptr(RARCH_DIR_SAVEFILE),
+               dir_get_ptr(RARCH_DIR_CURRENT_SAVESTATE));
+         }
+         break;
+
+      case RARCH_NETPLAY_CTL_SKIP_NETPLAY_CALLBACKS:
+         ret = (net_st->core_netpacket_interface != NULL);
+         break;
+
+      case RARCH_NETPLAY_CTL_ALLOW_TIMESKIP:
+         ret = (!netplay
+                  || netplay->modus != NETPLAY_MODUS_CORE_PACKET_INTERFACE
+                  || !netplay_have_any_active_connection(netplay));
          break;
 
       case RARCH_NETPLAY_CTL_NONE:
@@ -9113,6 +9413,79 @@ bool netplay_decode_hostname(const char *hostname,
    string_list_deinitialize(&hostname_data);
 
    return true;
+}
+
+/**
+ * netplay_send_cmd_netpacket
+ * @netplay       : pointer to netplay object
+ * @conn_idx      : connection index to send cmd to
+ * @buf           : packet data pointer
+ * @len           : packet data size
+ * @pkt_client_id : source id if host sending to client, otherwise recipient id or excepted id if broadcast
+ * @broadcast     : pass true on client if host should relay this to everyone else
+ *
+ * Send a netpacket command to a connected peer.
+ */
+static void netplay_send_cmd_netpacket(netplay_t *netplay, size_t conn_idx,
+      const void* buf, size_t len, uint16_t pkt_client_id, bool broadcast)
+{
+   struct netplay_connection *connection;
+   struct socket_buffer *sbuf;
+   uint32_t cmdbuf[3];
+   bool need_flush;
+
+   if (conn_idx >= netplay->connections_size) return;
+   connection = &netplay->connections[conn_idx];
+   if (!(connection->flags & NETPLAY_CONN_FLAG_ACTIVE)) return;
+   if (connection->mode != NETPLAY_CONNECTION_PLAYING) return;
+
+   cmdbuf[0] = htonl(broadcast
+                 ? NETPLAY_CMD_NETPACKET_BROADCAST : NETPLAY_CMD_NETPACKET);
+   cmdbuf[1] = htonl(len);
+   cmdbuf[2] = htonl(pkt_client_id);
+
+   sbuf = &connection->send_packet_buffer;
+   need_flush = (buf_remaining(sbuf) < sizeof(cmdbuf)+len);
+
+   if (     (need_flush && !netplay_send_flush(sbuf, connection->fd, true))
+         || (!netplay_send(sbuf, connection->fd, cmdbuf, sizeof(cmdbuf)))
+         || (len && !netplay_send(sbuf, connection->fd, buf, len)))
+      netplay_hangup(netplay, connection);
+}
+
+static void RETRO_CALLCONV netplay_netpacket_send_cb(int flags,
+      const void* buf, size_t len, uint16_t client_id, bool broadcast)
+{
+   net_driver_state_t *net_st = &networking_driver_st;
+   netplay_t *netplay         = net_st->data;
+   if (!netplay) return;
+
+   if (buf == NULL)
+   {
+      /* With NULL this function instead flushes packets and checks incoming */
+      netplay_send_flush_all(netplay, NULL);
+      input_poll_net(netplay);
+      return;
+   }
+
+   if (!netplay->is_server)
+   {
+      /* client always sends packet to host, host will relay it if needed */
+      netplay_send_cmd_netpacket(netplay, 0, buf, len, client_id, broadcast);
+   }
+   else if (broadcast)
+   {
+      /* send packet to all clients (client_id can be set as exception) */
+      size_t i;
+      for (i = 0; i < netplay->connections_size; i++)
+         if (i+1 != client_id)
+            netplay_send_cmd_netpacket(netplay, i, buf, len, 0, false);
+   }
+   else if (client_id)
+   {
+      /* send packet to specific client */
+      netplay_send_cmd_netpacket(netplay, client_id-1, buf, len, 0, false);
+   }
 }
 
 /* Netplay Widgets */

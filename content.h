@@ -66,14 +66,19 @@ bool content_ram_state_pending(void);
 /* Gets the number of bytes required to serialize the state. */
 size_t content_get_serialized_size(void);
 
-/* Serializes the current state. buffer must be at least content_get_serialized_size bytes */
-bool content_serialize_state(void* buffer, size_t buffer_size);
+/* Gets the number of bytes required to serialize the state for rewind. */
+size_t content_get_serialized_size_rewind(void);
+
+/* Serializes the current state for rewinding. buffer must be at least content_get_serialized_size bytes */
+bool content_serialize_state_rewind(void* buffer, size_t buffer_size);
 
 /* Deserializes the current state. */
 bool content_deserialize_state(const void* serialized_data, size_t serialized_size);
 
 /* Waits for any in-progress save state tasks to finish */
 void content_wait_for_save_state_task(void);
+/* Waits for any in-progress load state tasks to finish */
+void content_wait_for_load_state_task(void);
 
 /* Copy a save state. */
 bool content_rename_state(const char *origin, const char *dest);

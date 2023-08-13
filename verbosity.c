@@ -24,10 +24,15 @@
 
 #ifdef __MACH__
 #include <TargetConditionals.h>
+#include <Availability.h>
 #if TARGET_IPHONE_SIMULATOR
 #include <stdio.h>
 #else
+#if __IPHONE_OS_VERSION_MIN_REQUIRED > __IPHONE_10_0 || __TV_OS_VERSION_MIN_REQUIRED > __TVOS_10_0
+#include <os/log.h>
+#else
 #include <asl.h>
+#endif
 #endif
 #endif
 
@@ -213,29 +218,7 @@ void retro_main_log_file_deinit(void)
 #if !defined(HAVE_LOGGER)
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
-   verbosity_state_t *g_verbosity = &main_verbosity_st;
-#if TARGET_OS_IPHONE
-#if TARGET_IPHONE_SIMULATOR
-   vprintf(fmt, ap);
-#else
-   static aslclient asl_client;
-   static int asl_initialized = 0;
-   if (!asl_initialized)
-   {
-      asl_client      = asl_open(
-            FILE_PATH_PROGRAM_NAME,
-            "com.apple.console",
-            ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
-      asl_initialized = 1;
-   }
-   aslmsg msg = asl_new(ASL_TYPE_MSG);
-   asl_set(msg, ASL_KEY_READ_UID, "-1");
-   if (tag)
-      asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s", tag);
-   asl_vlog(asl_client, msg, ASL_LEVEL_NOTICE, fmt, ap);
-   asl_free(msg);
-#endif
-#elif defined(_XBOX1)
+#if defined(_XBOX1)
    /* FIXME: Using arbitrary string as fmt argument is unsafe. */
    char msg_new[256];
    char buffer[256];
@@ -247,6 +230,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    wvsprintf(buffer, msg_new, ap);
    OutputDebugStringA(buffer);
 #elif defined(ANDROID)
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
    int prio = ANDROID_LOG_INFO;
    if (tag)
    {
@@ -264,8 +248,9 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    else
       __android_log_vprint(prio, FILE_PATH_PROGRAM_NAME, fmt, ap);
 #else
-   FILE          *fp = (FILE*)g_verbosity->fp;
-   const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
+   FILE                       *fp = (FILE*)g_verbosity->fp;
+   const char              *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
 #if defined(HAVE_QT) || defined(__WINRT__)
    char buffer[2048];
    buffer[0]         = '\0';
@@ -273,7 +258,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    /* Ensure null termination and line break in error case */
    if (vsnprintf(buffer, sizeof(buffer), fmt, ap) < 0)
    {
-      int end;
+      size_t end;
       buffer[sizeof(buffer) - 1]  = '\0';
       end = strlen(buffer) - 1;
       if (end >= 0)
@@ -298,16 +283,45 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #if defined(__WINRT__)
    OutputDebugStringA(buffer);
 #endif
+#else /* !HAVE_QT && !__WINRT__ */
+#if TARGET_OS_IPHONE
+#if TARGET_IPHONE_SIMULATOR
+   vprintf(fmt, ap);
+#elif __IPHONE_OS_VERSION_MIN_REQUIRED > __IPHONE_10_0 || __TV_OS_VERSION_MIN_REQUIRED > __TVOS_10_0
+   int sz = vsnprintf(NULL, 0, fmt, ap) + 1;
+   char buffer[sz];
+   vsnprintf(buffer, sz, fmt, ap);
+   os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
 #else
+   static aslclient asl_client;
+   static int asl_initialized = 0;
+   if (!asl_initialized)
+   {
+      asl_client      = asl_open(
+                                 FILE_PATH_PROGRAM_NAME,
+                                 "com.apple.console",
+                                 ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
+      asl_initialized = 1;
+   }
+   aslmsg msg = asl_new(ASL_TYPE_MSG);
+   asl_set(msg, ASL_KEY_READ_UID, "-1");
+   if (tag)
+      asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s", tag);
+   asl_vlog(asl_client, msg, ASL_LEVEL_NOTICE, fmt, ap);
+   asl_free(msg);
+#endif
+#endif
 #if defined(HAVE_LIBNX)
    mutexLock(&g_verbosity->mtx);
 #endif
+#if !TARGET_OS_TV
    if (fp)
    {
       fprintf(fp, "%s ", tag_v);
       vfprintf(fp, fmt, ap);
       fflush(fp);
    }
+#endif
 #if defined(HAVE_LIBNX)
    mutexUnlock(&g_verbosity->mtx);
 #endif
@@ -448,14 +462,12 @@ void rarch_log_file_init(
       time_t cur_time = time(NULL);
 
       rtime_localtime(&cur_time, &tm_);
-      strftime(timestamped_log_file_name, sizeof(timestamped_log_file_name), "retroarch__%Y_%m_%d__%H_%M_%S", &tm_);
-      strlcat(timestamped_log_file_name, ".log",
-            sizeof(timestamped_log_file_name));
+      strftime(timestamped_log_file_name, sizeof(timestamped_log_file_name), "retroarch__%Y_%m_%d__%H_%M_%S.log", &tm_);
    }
 
    /* If nothing has changed, do nothing */
-   if ((!log_to_file && !logging_to_file) ||
-       (log_to_file && logging_to_file))
+   if (  (!log_to_file && !logging_to_file)
+       || (log_to_file &&  logging_to_file))
       return;
 
    /* If we are currently logging to file and wish to stop,

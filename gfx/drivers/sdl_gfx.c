@@ -18,10 +18,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <retro_assert.h>
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
-#include <retro_assert.h>
 #include "../../verbosity.h"
 
 #ifdef HAVE_CONFIG_H
@@ -46,24 +44,23 @@
 
 typedef struct sdl_menu_frame
 {
-   bool active;
    struct scaler_ctx scaler;
    SDL_Surface *frame;
+   bool active;
 } sdl_menu_frame_t;
 
 typedef struct sdl_video
 {
-   bool quitting;
-   uint8_t font_r;
-   uint8_t font_g;
-   uint8_t font_b;
-
    struct scaler_ctx scaler;
    sdl_menu_frame_t menu;
    SDL_Surface *screen;
 
    void *font;
    const font_renderer_driver_t *font_driver;
+   uint8_t font_r;
+   uint8_t font_g;
+   uint8_t font_b;
+   bool quitting;
 } sdl_video_t;
 
 static void sdl_gfx_free(void *data)
@@ -270,14 +267,12 @@ static void *sdl_gfx_init(const video_info_t *video,
          return NULL;
    }
 
-   vid = (sdl_video_t*)calloc(1, sizeof(*vid));
-   if (!vid)
+   if (!(vid = (sdl_video_t*)calloc(1, sizeof(*vid))))
       return NULL;
 
    video_info = SDL_GetVideoInfo();
-   retro_assert(video_info);
-   full_x = video_info->current_w;
-   full_y = video_info->current_h;
+   full_x     = video_info->current_w;
+   full_y     = video_info->current_h;
    RARCH_LOG("[SDL]: Detecting desktop resolution %ux%u.\n", full_x, full_y);
 
    if (!video->fullscreen)
@@ -407,6 +402,12 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
 
       if (SDL_MUSTLOCK(vid->screen))
          SDL_UnlockSurface(vid->screen);
+      
+      if (msg)
+         sdl_render_msg(vid, vid->screen,
+         msg, vid->screen->w, vid->screen->h, vid->screen->format,
+         video_info->font_msg_pos_x,
+         video_info->font_msg_pos_y);
    }
 
    if (title[0])
@@ -431,19 +432,7 @@ static bool sdl_gfx_focus(void *data)
    return (SDL_GetAppState() & (SDL_APPINPUTFOCUS | SDL_APPACTIVE)) == (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
 }
 
-static bool sdl_gfx_suppress_screensaver(void *data, bool enable)
-{
-#ifdef HAVE_X11
-   if (video_driver_display_type_get() == RARCH_DISPLAY_X11)
-   {
-      x11_suspend_screensaver(video_driver_window_get(), enable);
-      return true;
-   }
-#endif
-
-   return false;
-}
-
+static bool sdl_gfx_suspend_screensaver(void *data, bool enable) { return false; }
 /* TODO/FIXME - implement */
 static bool sdl_gfx_has_windowed(void *data) { return true; }
 
@@ -526,9 +515,9 @@ static uint32_t sdl_get_flags(void *data)
 
 static const video_poke_interface_t sdl_poke_interface = {
    sdl_get_flags,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
+   NULL, /* set_video_mode */
    NULL, /* get_refresh_rate */
    sdl_set_filtering,
    NULL, /* get_video_output_size */
@@ -536,20 +525,20 @@ static const video_poke_interface_t sdl_poke_interface = {
    NULL, /* get_video_output_next */
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
-   NULL,
+   NULL, /* set_aspect_ratio */
    sdl_apply_state_changes,
    sdl_set_texture_frame,
    sdl_set_texture_enable,
-   NULL,
+   NULL, /* set_osd_msg */
    sdl_show_mouse,
    sdl_grab_mouse_toggle,
-   NULL,                         /* get_current_shader */
-   NULL,                         /* get_current_software_framebuffer */
-   NULL,                         /* get_hw_render_interface */
-   NULL,                         /* set_hdr_max_nits */
-   NULL,                         /* set_hdr_paper_white_nits */
-   NULL,                         /* set_hdr_contrast */
-   NULL                          /* set_hdr_expand_gamut */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void sdl_get_poke_interface(void *data, const video_poke_interface_t **iface)
@@ -575,21 +564,26 @@ video_driver_t video_sdl = {
    sdl_gfx_set_nonblock_state,
    sdl_gfx_alive,
    sdl_gfx_focus,
-   sdl_gfx_suppress_screensaver,
+#ifdef HAVE_X11
+   x11_suspend_screensaver,
+#else
+   sdl_gfx_suspend_screensaver,
+#endif
    sdl_gfx_has_windowed,
    sdl_gfx_set_shader,
    sdl_gfx_free,
    "sdl",
-   NULL,
+   NULL, /* set_viewport */
    NULL, /* set_rotation */
    sdl_gfx_viewport_info,
    NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-   NULL,
+   NULL, /* get_overlay_interface */
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
+   sdl_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
 #endif
-   sdl_get_poke_interface
 };

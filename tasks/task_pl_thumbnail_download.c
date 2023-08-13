@@ -15,9 +15,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include <ctype.h>
 
 #include <string/stdstring.h>
@@ -87,6 +88,45 @@ typedef struct pl_entry_id
 /* Utility Functions */
 /*********************/
 
+/* Fetches the thumbnail subdirectory (Named_Snaps,
+ * Named_Titles, Named_Boxarts) corresponding to the
+ * specified 'type index' (1, 2, 3).
+ * Returns true if 'type index' is valid */
+static bool gfx_thumbnail_get_sub_directory(
+      unsigned type_idx, const char **sub_directory)
+{
+   if (!sub_directory)
+      return false;
+   
+   switch (type_idx)
+   {
+      case 1:
+         *sub_directory = "Named_Snaps";
+         return true;
+      case 2:
+         *sub_directory = "Named_Titles";
+         return true;
+      case 3:
+         *sub_directory = "Named_Boxarts";
+         return true;
+      case 0:
+      default:
+         break;
+   }
+   
+   return false;
+}
+
+/* Fetches current database name.
+ * Returns true if database name is valid. */
+static void gfx_thumbnail_get_db_name(
+      gfx_thumbnail_path_data_t *path_data, const char **db_name)
+{
+   if (!string_is_empty(path_data->content_db_name))
+      *db_name = path_data->content_db_name;
+}
+
+
 /* Fetches local and remote paths for current thumbnail
  * of current type */
 static bool get_thumbnail_paths(
@@ -113,7 +153,7 @@ static bool get_thumbnail_paths(
       return false;
    
    /* Extract required strings */
-   gfx_thumbnail_get_system(pl_thumb->thumbnail_path_data, &system);
+   gfx_thumbnail_get_system( pl_thumb->thumbnail_path_data, &system);
    gfx_thumbnail_get_db_name(pl_thumb->thumbnail_path_data, &db_name);
    if (!gfx_thumbnail_get_img_name(pl_thumb->thumbnail_path_data, &img_name))
       return false;
@@ -606,8 +646,13 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
    
    if (do_refresh)
    {
-      unsigned i = (unsigned)pl_thumb->list_index;
-      menu_driver_ctl(RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE, &i);
+      struct menu_state *menu_st = menu_state_get_ptr();
+      unsigned i                 = (unsigned)pl_thumb->list_index;
+      if (     menu_st->driver_ctx 
+            && menu_st->driver_ctx->refresh_thumbnail_image)
+         menu_st->driver_ctx->refresh_thumbnail_image(
+               menu_st->userdata, i);
+
    }
    
 #endif
