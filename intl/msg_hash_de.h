@@ -796,7 +796,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
-   "Dymanisches Laden der Libretro-Bilbiothek zur Laufzeit"
+   "Dynamisches Laden der Libretro-Bibliothek zur Laufzeit"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
@@ -2007,7 +2007,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
-   "Bildschrim-eigene Wiederholfrequenz"
+   "Bildschirm-eigene Wiederholfrequenz"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
@@ -2015,11 +2015,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Aktualisierungsrate automatisch wechseln"
+   "Automatischer Aktualisierungsratenwechsel"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Die Aktualisierungsrate des Bildschirms wird automatisch gewechselt, wenn der angegebene Bildschirmmodus verwendet wird, basierend auf dem laufenden Core und/oder Inhalt."
+   "Bildschirmaktualisierungsrate abhängig vom aktuellen Inhalt automatisch umschalten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
@@ -2032,6 +2032,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
    "Alle Vollbildmodi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "Automatische Aktualisierungsrate PAL-Schwellenwert"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "Maximale Aktualisierungsrate, die als PAL eingestuft wird."
    )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
@@ -2849,7 +2857,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
-   "Benachrichtungs-Ton aktivieren"
+   "Aktiviere 'Benachrichtungs' Ton"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
@@ -3007,6 +3015,22 @@ MSG_HASH(
    "Zeit in Sekunden, für die eine Taste bei der Belegung gehalten werden muss."
    )
 MSG_HASH(
+   MSG_INPUT_BIND_PRESS,
+   "Tastatur, Maus oder Controller drücken"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_RELEASE,
+   "Tasten und Knöpfe freigeben!"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "Zeitlimit"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_HOLD,
+   "Halten"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Turbo-Periode"
    )
@@ -3100,7 +3124,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
-   "Libretro verwendet eine virtuelle Gamepad-Abstraktion, die als „RetroPad“ bekannt ist, um von Frontends (wie RetroArch) zu Kernen und umgekehrt zu kommunizieren. In diesem Menü wird festgelegt, wie das virtuelle RetroPad auf die physischen Eingabegeräte abgebildet wird und welche virtuellen Eingabeports diese Geräte belegen. Wenn ein physisches Eingabegerät korrekt erkannt und automatisch konfiguriert wird, braucht der Benutzer dieses Menü wahrscheinlich gar nicht zu verwenden und sollt[...]"
+   "Libretro verwendet eine virtuelle Gamepad-Abstraktion, die als „RetroPad“ bekannt ist, um von Frontends (wie RetroArch) zu Cores und umgekehrt zu kommunizieren. In diesem Menü wird festgelegt, wie das virtuelle RetroPad auf die physischen Eingabegeräte zugeordnet wird und welche virtuellen Eingabeports diese Geräte belegen.\nWenn ein physisches Eingabegerät korrekt erkannt und automatisch konfiguriert wird, benötigt der Benutzer dieses Menü wahrscheinlich gar nicht und sollte für core[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -4287,16 +4311,32 @@ MSG_HASH(
    "Speicherdaten im Verzeichnis des Inhalts speichern"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   "Inhaltsverzeichnis als Speicherverzeichnis verwenden."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
    "Savestates im Verzeichnis des Inhalts speichern"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   "Inhaltsverzeichnis als Verzeichnis für Speicherstände verwenden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
    "Systemdateien befinden sich im Verzeichnis des Inhalts"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   "Inhaltsverzeichnis als Systemverzeichnis verwenden."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Screenshots im Verzeichnis des Inhalts speichern"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+   "Inhaltsverzeichnis als Screenshot-Verzeichnis verwenden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
@@ -5109,6 +5149,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
    "Eine Bildschirmmeldung anzeigen, wenn beim Start automatisch die zuletzt verwendete Disc von Multi-Disc-Inhalten wiederhergestellt wird, die über M3U-Wiedergabelisten geladen wurde."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
+   "Savestate-Benachrichtigungen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
+   "Zeigt auf dem Bildschirm eine Nachricht beim Speichern und Laden von Savestates an."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
@@ -6216,7 +6264,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-   "Lege ein Bild als Menühintergrund fest."
+   "Ein Bild auswählen, das als Menühintergrund verwendet werden soll. Manuelle und dynamische Bilder übersteuern das „Farbthema“."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
@@ -6309,9 +6357,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
    "KI-Dienst Ausgabeart"
    )
-MSG_HASH( /* FIXME What does the Narrator mode do? */
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "Übersetzungen als Textüberlagerung anzeigen (Bildmodus) oder als Text-zu-Sprache abspielen (Sprachmodus)."
+   "Übersetzung als Bild-Overlay (Bildmodus), als direktes Audio (Sprache), Text-to-Speech (Erzähler) oder als Text-Overlay (Text) anzeigen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
@@ -6352,6 +6400,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
    "Die Sprache, in die der Dienst übersetzt. 'Standard' ist Englisch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_POLL_DELAY,
+   "Automatische Abfrageverzögerung für KI-Dienst"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_POLL_DELAY,
+   "Mindestverzögerung in ms zwischen automatischen Aufrufen. Verringert die Reaktionszeit, erhöht aber die CPU-Leistung."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION,
+   "KI-Dienst-Textposition überschreiben"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_TEXT_POSITION,
+   "Die Position des Overlays übersteuern, wenn sich der Dienst im Textmodus befindet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_PADDING,
+   "KI-Dienst-Textauffüllung (%)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_TEXT_PADDING,
+   "Vertikaler Abstand, der auf das Textoverlay angewendet wird, wenn der Dienst im Textmodus ist. Ein größeres Auffüllen schiebt den Text in die Mitte des Bildschirms."
    )
 
 /* Settings > Accessibility */
@@ -6866,6 +6938,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    "Fehlende Vorschaubilder automatisch herunterladen, während die Wiedergabelisten durchsucht werden. Hat schwerwiegende Auswirkungen auf die Leistung."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
+   "Updater-Einstellungen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UPDATER_SETTINGS,
+   "Zugriff auf Core-Updater-Einstellungen"
+   )
 
 /* Settings > Network > Updater */
 
@@ -7133,6 +7213,14 @@ MSG_HASH(
    "Wenn diese Option aktiviert ist und auch das Verzeichnis 'Dateibrowser' ausgewählt ist, wird der aktuelle Wert des Parameters 'Dateibrowser' in der Wiedergabeliste gespeichert. Wenn die Wiedergabeliste auf ein anderes System geladen wird, auf dem dieselbe Option aktiviert ist, wird der Wert des Parameters 'Dateibrowser' mit dem Wert der Wiedergabeliste verglichen. Wenn dies nicht der Fall ist, werden die Pfade der Wiedergabelisteneinträge automatisch korrigiert."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
+   "Dateinamen zur Thumbnail-Zuordnung verwenden"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
+   "Wenn aktiviert, werden Thumbnails anhand des Dateinamens des Eintrags und nicht anhand seines Labels gefunden."
+   )
+   MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Verwalten"
    )
@@ -8351,16 +8439,32 @@ MSG_HASH(
    "Spieleinstellungen speichern"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
+   "Core-Optionen speichern, die nur für den aktuellen Inhalt gelten."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "Spieleinstellungen löschen"
+   "Spieloptionen entfernen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "Core-Optionen löschen, die nur für den aktuellen Inhalt gelten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
    "Inhaltsverzeichnis-Einstellungen speichern"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
+   "Core-Optionen speichern, die für alle Inhalte aus dem Verzeichnis der aktuellen Inhalt gelten."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "Inhaltsverzeichnis-Einstellungen löschen"
+   "Optionen für Inhaltsverzeichnisse entfernen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "Core-Optionen löschen, die für alle Inhalte aus dem Verzeichnis der aktuellen Inhalt gelten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
@@ -8423,28 +8527,64 @@ MSG_HASH(
    "Remap-Datei laden"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_LOAD,
+   "Eingabezuordnungen laden und akuelle ersetzen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_AS,
+   "Remapdatei speichern unter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_AS,
+   "Aktuelle Eingabezuordnungen als neue Remapdatei speichern."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
    "Speichere Core-Remap-Datei"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CORE,
+   "Eine Remapdatei speichern, die für alle mit diesem Core geladenen Inhalte gilt."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
-   "Lösche Core-Remap-Datei"
+   "Core-Remapdatei entfernen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CORE,
+   "Remapdatei löschen, die für alle mit diesem Core geladenen Inhalte gilt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
    "Inhaltsverzeichnis-Remap-Datei speichern"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CONTENT_DIR,
+   "Remapdatei speichern, die für alle Inhalte gilt, die aus demselben Verzeichnis wie die aktuelle Datei geladen werden."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
-   "Remap-Datei für das Spielinhaltsverzeichnis löschen"
+   "Remapdatei für das Spielinhaltsverzeichnis entfernen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
+   "Remapdatei löschen, die für alle Inhalte gilt, die aus demselben Verzeichnis wie die aktuelle Datei geladen werden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
    "Speichere Spiel-Remap-Datei"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_GAME,
+   "Remapdatei speichern, die nur für den aktuellen Inhalt gilt."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
-   "Lösche Spiel-Remap-Datei"
+   "Spiel-Remapdatei entfernen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_GAME,
+   "Remapdatei löschen, die nur für den aktuellen Inhalt gilt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
@@ -8860,7 +9000,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
-   "Laden"
+   "Voreinstellung laden"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
@@ -8872,23 +9012,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
-   "Voranstellen"
+   "Voreinstellung vorangestellen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
-   "Voreinstellung an aktuell geladene voranstellen"
+   "Voreinstellung vor aktuell gelandende Voreinstellungen stellen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
-   "Anhängen"
+   "Voreinstellung anhängen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
-   "Voreinstellung an aktuell geladene anhängen"
+   "Voreinstellung hinter aktuell gelandende Voreinstellungen hängen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Speichern"
+   "Voreinstellung speichern"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
@@ -8896,7 +9036,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Entfernen"
+   "Voreinstellung entfernen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
@@ -9067,6 +9207,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD,
    "Aktuelle Konfiguration laden und ersetzen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_SAVE_AS,
+   "Overrides speichern als"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_SAVE_AS,
+   "Die aktuelle Konfiguration als eine neue Override-Datei speichern."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -9391,6 +9539,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
    "Erzählermodus"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_MODE,
+   "Textmodus"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_NARRATOR_MODE,
+   "Text und Erzähler"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_NARRATOR_MODE,
+   "Bild und Erzähler"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_BOTTOM,
+   "Unten"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_TOP,
+   "Oben"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
@@ -9762,7 +9930,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(Taste: %s)"
+   "Taste %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
@@ -10109,6 +10277,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
    "16:10 (zentriert)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_21_9_CENTRE,
+   "21:9 (zentriert)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
@@ -11385,7 +11557,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "Aktualisierungen"
+   "Core-Updater-Einstellungen"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
@@ -11493,7 +11665,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "Abspielen"
+   "Mit Mediaplayer abspielen"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
@@ -12012,6 +12184,22 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "Core Installation fehlgeschlagen"
    )
 MSG_HASH(
+   MSG_AI_VIDEO_DRIVER_NOT_SUPPORTED,
+   "Videotreiber wird für den KI-Dienst nicht unterstützt."
+   )
+MSG_HASH(
+   MSG_AI_AUTO_MODE_ENABLED,
+   "Automatische Übersetzung aktiviert."
+   )
+MSG_HASH(
+   MSG_AI_AUTO_MODE_DISABLED,
+   "Automatische Übersetzung deaktiviert."
+   )
+MSG_HASH(
+   MSG_AI_NOTHING_TO_TRANSLATE,
+   "Nichts zu übersetzen."
+   )
+MSG_HASH(
    MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
    "Drücke fünf Mal rechts, um alle Cheats zu löschen."
    )
@@ -12469,6 +12657,10 @@ MSG_HASH(
    "CRC32-Prüfsummen des Inhalts weichen ab. Andere Spiele können nicht verwendet werden."
    )
 MSG_HASH(
+   MSG_CONTENT_NETPACKET_CRC32S_DIFFER,
+   "Der Host führt ein anderes Spiel aus."
+   )
+MSG_HASH(
    MSG_PING_TOO_HIGH,
    "Dein Ping ist zu hoch für diesen Host."
    )
@@ -12871,6 +13063,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_PRESET_FILENAME,
    "Vorlagen-Dateiname"
+   )
+MSG_HASH(
+   MSG_INPUT_OVERRIDE_FILENAME,
+   "Dateiname für Eingabeüberschreibungen"
+   )
+MSG_HASH(
+   MSG_INPUT_REMAP_FILENAME,
+   "Dateiname für Eingabezuordnungen"
    )
 MSG_HASH(
    MSG_INPUT_RENAME_ENTRY,
@@ -14111,6 +14311,14 @@ MSG_HASH(
    "Das Aktivieren von Linux GameMode kann die Latenzzeit verbessern, Audioknackser beheben und die Gesamtleistung maximieren, indem CPU und GPU automatisch für die beste Leistung konfiguriert werden.\nDie GameMode-Software muss installiert sein, damit dies funktioniert. Siehe https://github.com/FeralInteractive/gamemode für Informationen zur Installation von GameMode."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
+   "Bildpausen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_REST,
+   "Versucht, die CPU-Last von vsync zu reduzieren, indem es nach der Framedarstellung so viel wie möglich ruht. In erster Linie für Scanline-Synchronisation von Drittanbietern entwickelt."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "Verwende PAL60-Modus"
    )
@@ -14202,18 +14410,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL,
    "Bildschirmhelligkeit erhöhen oder verringern."
    )
-
-#ifdef HAVE_LAKKA_SWITCH
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
-   "GPU Übertakten"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
-   "Über- oder Untertakten der Switch GPU."
-   )
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#ifdef HAVE_LIBNX
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
    "CPU Übertakten"
@@ -14272,6 +14469,40 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_TIMEZONE,
    "Zeigt eine Liste der verfügbaren Zeitzonen an. Nach Auswahl einer Zeitzone werden Zeit und Datum an die gewählte Zeitzone angepasst. Es wird davon ausgegangen, dass die System-/Hardware-Uhr auf UTC eingestellt ist."
    )
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS,
+   "Optionen für Nintendo Switch"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LAKKA_SWITCH_OPTIONS,
+   "Nintendo Switch spezifische Optionen verwalten."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
+   "CPU-Übertaktung"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_OC_ENABLE,
+   "CPU-Übertaktungsfrequenzen aktivieren"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_CEC_ENABLE,
+   "CEC-Unterstützung"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_CEC_ENABLE,
+   "CEC-Handshake mit TV beim Docken aktivieren"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLUETOOTH_ERTM_DISABLE,
+   "Bluetooth ERTM deaktivieren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
+   "Bluetooth ERTM deaktivieren, um das Koppeln einiger Geräte zu verbessern"
+   )
+#endif
 MSG_HASH(
    MSG_LOCALAP_SWITCHING_OFF,
    "Wi-Fi Access Point wird ausgeschaltet."
@@ -14308,6 +14539,8 @@ MSG_HASH(
    MSG_LOCALAP_ERROR_CONFIG_PARSE,
    "Falsche Konfigurationsdatei - APNAME oder PASSWORD in %s nicht gefunden"
    )
+#endif
+#ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
 MSG_HASH(

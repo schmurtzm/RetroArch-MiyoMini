@@ -1,10 +1,4 @@
-#ifdef HAVE_LAKKA_SWITCH
-MSG_HASH(
-   MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,
-   "switch_gpu_profile"
-   )
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#ifdef HAVE_LIBNX
 MSG_HASH(
    MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,
    "switch_cpu_profile"
@@ -1892,10 +1886,6 @@ MSG_HASH(
    )
 #endif
 MSG_HASH(
-   MENU_ENUM_LABEL_INPUT_BIND_MODE,
-   "input_bind_mode"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT,
    "input_bind_timeout"
    )
@@ -2312,10 +2302,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_DRIVER_XMB,
    "xmb"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_MENU_ENUM_THROTTLE_FRAMERATE,
-   "menu_throttle_framerate"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
@@ -3242,6 +3228,10 @@ MSG_HASH(
    "remap_file_load"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_REMAP_FILE_SAVE_AS,
+   "remap_file_save_as"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,
    "remap_file_save_core"
    )
@@ -3332,6 +3322,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,
    "vrr_runloop_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,
+   "menu_throttle_framerate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+   "menu_throttle_framerate"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SETTINGS,
@@ -3430,6 +3428,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD,
    "override_file_load"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERRIDE_FILE_SAVE_AS,
+   "override_file_save_as"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_OVERRIDE_UNLOAD,
@@ -3679,6 +3681,29 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_SSH_ENABLE,
    "ssh_enable"
+   )
+#endif
+
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_LAKKA_SWITCH_OPTIONS_LIST,
+   "deferred_lakka_switch_options_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_LAKKA_SWITCH_OPTIONS,
+   "Switch_Options"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SWITCH_OC_ENABLE,
+   "Switch_OC_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SWITCH_CEC_ENABLE,
+   "Switch_CEC_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_BLUETOOTH_ERTM_DISABLE,
+   "Switch_ERTM_Disable"
    )
 #endif
 MSG_HASH(
@@ -4194,6 +4219,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO,
    "video_frame_delay_auto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_FRAME_REST,
+   "video_frame_rest"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_DELAY,
@@ -4722,10 +4751,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS,
    "deferred_rpl_entry_actions"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,
-   "menu_throttle_framerate"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_OVERLAY_SETTINGS,
@@ -5891,6 +5916,10 @@ MSG_HASH(
    "notification_show_set_initial_disk"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_SAVE_STATE,
+   "notification_show_save_state"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NOTIFICATION_SHOW_FAST_FORWARD,
    "notification_show_fast_forward"
    )
@@ -6005,6 +6034,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_AI_SERVICE_SOURCE_LANG,
    "ai_service_source_lang"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AI_SERVICE_POLL_DELAY,
+   "ai_service_poll_delay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AI_SERVICE_TEXT_POSITION,
+   "ai_service_text_position"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AI_SERVICE_TEXT_PADDING,
+   "ai_service_text_padding"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SETTINGS_SHOW_DRIVERS,
