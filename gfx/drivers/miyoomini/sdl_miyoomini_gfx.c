@@ -744,7 +744,8 @@ static bool sdl_miyoomini_gfx_frame(void *data, const void *frame,
    }
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info->menu_is_alive, video_info);
+   bool menu_is_alive   = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    /* Render OSD text at flip */
