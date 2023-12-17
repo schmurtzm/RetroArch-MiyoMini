@@ -1040,7 +1040,7 @@
 #define DEFAULT_NOTIFICATION_SHOW_CHEATS_APPLIED true
 
 /* Display a notification when applying an
- * IPS/BPS/UPS patch file */
+ * IPS/BPS/UPS/Xdelta patch file */
 #define DEFAULT_NOTIFICATION_SHOW_PATCH_APPLIED true
 
 /* Display a notification when loading an
@@ -1148,6 +1148,11 @@
 #define DEFAULT_WASAPI_FLOAT_FORMAT false
 /* Automatic shared mode buffer */
 #define DEFAULT_WASAPI_SH_BUFFER_LENGTH 0
+#endif
+
+#if TARGET_OS_IOS
+/* Respect silent mode (false will render audio in silent mode) */
+#define DEFAULT_AUDIO_RESPECT_SILENT_MODE true
 #endif
 
 /* Automatically mute audio when fast forward
@@ -1503,6 +1508,13 @@
 #define DEFAULT_TURBO_DUTY_CYCLE 3
 #define DEFAULT_TURBO_MODE 0
 #define DEFAULT_TURBO_DEFAULT_BTN RETRO_DEVICE_ID_JOYPAD_B
+#define DEFAULT_ALLOW_TURBO_DPAD false
+
+#if TARGET_OS_IPHONE
+#define DEFAULT_INPUT_KEYBOARD_GAMEPAD_ENABLE false
+#else
+#define DEFAULT_INPUT_KEYBOARD_GAMEPAD_ENABLE true
+#endif
 
 /* Enable input auto-detection. Will attempt to autoconfigure
  * gamepads, plug-and-play style. */

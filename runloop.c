@@ -4874,6 +4874,16 @@ void runloop_path_fill_names(void)
             ".ips",
             sizeof(runloop_st->name.ips) - len);
    }
+
+   if (string_is_empty(runloop_st->name.xdelta))
+   {
+      size_t len = strlcpy(runloop_st->name.xdelta,
+            runloop_st->runtime_content_path_basename,
+            sizeof(runloop_st->name.xdelta));
+      strlcpy(runloop_st->name.xdelta       + len,
+            ".xdelta",
+            sizeof(runloop_st->name.xdelta) - len);
+   }
 }
 
 
@@ -7435,7 +7445,7 @@ bool core_set_netplay_callbacks(void)
 {
    runloop_state_t *runloop_st        = &runloop_state;
 
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_SKIP_NETPLAY_CALLBACKS, NULL))
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL))
       return true;
 
    /* Force normal poll type for netplay. */
@@ -8021,7 +8031,7 @@ void runloop_path_set_redirect(settings_t *settings,
    /* Special save directory for netplay clients. */
    if (      netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL)
          && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL)
-         && !netplay_driver_ctl(RARCH_NETPLAY_CTL_SKIP_NETPLAY_CALLBACKS, NULL))
+         && !netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL))
    {
       fill_pathname_join(new_savefile_dir, new_savefile_dir, ".netplay",
          sizeof(new_savefile_dir));

@@ -1280,6 +1280,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Controlador do telemando de xogo a empregar."
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "Vídeo"
@@ -1493,10 +1494,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Desactiva calquera filtro de vídeo alimentado pola CPU."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Activa a pantalla completa sobre a muesca nos dispositivos Android"
-)
 
 /* Settings > Video > CRT SwitchRes */
 

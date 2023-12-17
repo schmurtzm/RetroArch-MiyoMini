@@ -1352,6 +1352,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "مشغل Joypad للاستخدام."
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "نظام تشغيل الفيديو"
@@ -1633,10 +1634,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "إلغاء تحميل أي فلتر فيديو نشط يعمل على المعالج."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "تمكين ملء الشاشة فوق النوتش في أجهزة الأندرويد"
-)
 
 /* Settings > Video > CRT SwitchRes */
 

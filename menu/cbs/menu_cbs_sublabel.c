@@ -301,6 +301,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_information_list_list,         MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_achievement_list,              MENU_ENUM_SUBLABEL_ACHIEVEMENT_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_achievement_pause_cancel,      MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE_CANCEL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_achievement_resume_cancel,     MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_CANCEL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_achievement_server_unreachable,MENU_ENUM_SUBLABEL_ACHIEVEMENT_SERVER_UNREACHABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_enable,                MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_test_unofficial,       MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_hardcore_mode_enable,  MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE)
@@ -516,6 +517,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_mute,                    MENU_
 #ifdef HAVE_AUDIOMIXER
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_mixer_mute,              MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE)
 #endif
+#if TARGET_OS_IOS
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_respect_silent_mode,     MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_fastforward_mute,        MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_fastforward_speedup,     MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_camera_allow,                  MENU_ENUM_SUBLABEL_CAMERA_ALLOW)
@@ -548,6 +552,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_period,            MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_duty_cycle,              MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_mode,              MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_default_button,    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_allow_turbo_dpad,        MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_rumble_gain,             MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vertical_sync,           MENU_ENUM_SUBLABEL_VIDEO_VSYNC)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_adaptive_vsync,          MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC)
@@ -4432,6 +4437,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_turbo_default_button);
             break;
+         case MENU_ENUM_LABEL_INPUT_ALLOW_TURBO_DPAD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_allow_turbo_dpad);
+            break;
          case MENU_ENUM_LABEL_INPUT_RUMBLE_GAIN:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_rumble_gain);
             break;
@@ -4512,6 +4520,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_mixer_mute);
 #endif
             break;
+#if TARGET_OS_IOS
+         case MENU_ENUM_LABEL_AUDIO_RESPECT_SILENT_MODE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_respect_silent_mode);
+            break;
+#endif
          case MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_fastforward_mute);
             break;
@@ -4555,6 +4568,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_ACHIEVEMENT_RESUME_CANCEL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_achievement_resume_cancel);
+            break;
+         case MENU_ENUM_LABEL_ACHIEVEMENT_SERVER_UNREACHABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_achievement_server_unreachable);
             break;
          case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
          case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY_HARDCORE:

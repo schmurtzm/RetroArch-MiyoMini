@@ -1477,10 +1477,6 @@ MSG_HASH(
    "Käytettävä syöteajuri. Jotkin videoajurit pakottavat eri syöteajurin."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
-   "Udev-syöttölaitteen ohjain käyttää äskettäistä evdev-ohjainten API:ta ohjaintuen tukemiseksi. Se tukee laitteiden liittämisen järjestelmän ollessa päällä (hotplugging) ja fyysisen palautteen (force feedback) käyttöä.\nOhjain lukee evdev-tapahtumia näppäimistön tukemiseksi. Se tukee myös näppäimistön takaisinkutsua (callback), hiiriä ja kosketuslevyjä.\nOletuksena useimmissa jakeluissa (/dev/input) -solmut ovat pelkästään pääkäyttäjän käytettävissä (mode 600).[...]"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    "Linuxraw-syöttölaitteen ohjain vaatii aktiivisen TTY:n. Näppäintapahtumat luetaan suoraan TTY:ltä, mikä tekee siitä yksinkertaisemman, mutta ei yhtä joustavan kuin udev. Hiiriä ja muita laitteita ei tueta lainkaan. Tämä ohjain käyttää vanhempaa joystick API:a (/dev/input/js*)."
    )
@@ -1496,6 +1492,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Käytettävä ohjainajuri."
    )
+
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    "Käytettävä videoajuri."
@@ -1873,10 +1870,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Poista käytöstä kaikki aktiiviset suoritinkäyttöiset videosuodattimet."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Ota koko näyttö käyttöön Android-laitteissa"
-)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -2464,6 +2457,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
    "Mykistä mikserin ääni."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
+   "Kunnioita äänetöntä tilaa"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
+   "Mykistä kaikki äänet äänettömässä tilassa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,

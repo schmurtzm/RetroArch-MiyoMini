@@ -1773,6 +1773,9 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_AUDIOMIXER
    SETTING_BOOL("audio_mixer_mute_enable",       audio_get_bool_ptr(AUDIO_ACTION_MIXER_MUTE_ENABLE), true, false, false);
 #endif
+#if TARGET_OS_IOS
+   SETTING_BOOL("audio_respect_silent_mode",     &settings->bools.audio_respect_silent_mode, true, DEFAULT_AUDIO_RESPECT_SILENT_MODE, false);
+#endif
    SETTING_BOOL("audio_fastforward_mute",        &settings->bools.audio_fastforward_mute, true, DEFAULT_AUDIO_FASTFORWARD_MUTE, false);
    SETTING_BOOL("audio_fastforward_speedup",     &settings->bools.audio_fastforward_speedup, true, DEFAULT_AUDIO_FASTFORWARD_SPEEDUP, false);
 
@@ -2064,8 +2067,9 @@ static struct config_bool_setting *populate_settings_bool(
 #if TARGET_OS_IPHONE
    SETTING_BOOL("small_keyboard_enable",         &settings->bools.input_small_keyboard_enable, true, false, false);
 #endif
-   SETTING_BOOL("keyboard_gamepad_enable",       &settings->bools.input_keyboard_gamepad_enable, true, true, false);
+   SETTING_BOOL("keyboard_gamepad_enable",       &settings->bools.input_keyboard_gamepad_enable, true, DEFAULT_INPUT_KEYBOARD_GAMEPAD_ENABLE, false);
    SETTING_BOOL("input_autodetect_enable",       &settings->bools.input_autodetect_enable, true, DEFAULT_INPUT_AUTODETECT_ENABLE, false);
+   SETTING_BOOL("input_allow_turbo_dpad",        &settings->bools.input_allow_turbo_dpad, true, DEFAULT_ALLOW_TURBO_DPAD, false);
    SETTING_BOOL("input_auto_mouse_grab",         &settings->bools.input_auto_mouse_grab, true, false, false);
    SETTING_BOOL("input_remap_binds_enable",      &settings->bools.input_remap_binds_enable, true, true, false);
    SETTING_BOOL("all_users_control_menu",        &settings->bools.input_all_users_control_menu, true, DEFAULT_ALL_USERS_CONTROL_MENU, false);
@@ -2917,6 +2921,7 @@ void config_set_defaults(void *data)
    retroarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
    retroarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
    retroarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
+   retroarch_ctl(RARCH_CTL_UNSET_XDELTA_PREF, NULL);
 
    *recording_st->output_dir                     = '\0';
    *recording_st->config_dir                     = '\0';

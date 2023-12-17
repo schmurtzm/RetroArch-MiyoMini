@@ -1264,6 +1264,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Kontrollerdriveren som brukes."
    )
+
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    "Videodriveren som brukes."
@@ -1481,10 +1482,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Last ut alle aktive CPU-drevne videofilter."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Aktiver fullskjerm over skjermrammer i Android-enheter"
-)
 
 /* Settings > Video > CRT SwitchRes */
 

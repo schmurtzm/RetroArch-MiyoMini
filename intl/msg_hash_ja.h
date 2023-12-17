@@ -1452,6 +1452,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "使用するコントローラドライバです. "
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "ビデオのドライバ"
@@ -1757,10 +1758,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "使用中のCPU駆動ビデオフィルタを終了します."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Androidデバイスでノッチを越えたフルスクリーン表示"
-)
 
 /* Settings > Video > CRT SwitchRes */
 

@@ -1288,6 +1288,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Drajver za kontroler."
    )
+
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    "Video drajver."
@@ -1513,10 +1514,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Isključi bilo koji aktivan video filter baziran na procesoru."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Omogući režim celog ekrana kod Android uređaja sa zasekom"
-)
 
 /* Settings > Video > CRT SwitchRes */
 

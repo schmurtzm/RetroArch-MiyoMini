@@ -12070,7 +12070,7 @@ static bool setting_append_list(
             /* prevent unused function warning on unsupported builds */
             (void)setting_get_string_representation_int_gpu_index;
 
-#ifdef ANDROID
+#if defined(ANDROID) || TARGET_OS_IOS
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.video_notch_write_over_enable,
@@ -13774,6 +13774,26 @@ static bool setting_append_list(
                SD_FLAG_LAKKA_ADVANCED
                );
 #endif
+
+#if TARGET_OS_IOS
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.audio_respect_silent_mode,
+               MENU_ENUM_LABEL_AUDIO_RESPECT_SILENT_MODE,
+               MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
+               DEFAULT_AUDIO_RESPECT_SILENT_MODE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+#endif
+
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.audio_fastforward_mute,
@@ -15220,6 +15240,22 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_turbo_default_button;
          menu_settings_list_current_add_range(list, list_info, 0, (INPUT_TURBO_DEFAULT_BUTTON_LAST-1), 1, true, true);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_allow_turbo_dpad,
+                  MENU_ENUM_LABEL_INPUT_ALLOW_TURBO_DPAD,
+                  MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
+                  DEFAULT_ALLOW_TURBO_DPAD,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
 
          END_SUB_GROUP(list, list_info, parent_group);
 

@@ -1588,7 +1588,6 @@
 					"-DHAVE_IOS_SWIFT",
 					"-DHAVE_IOS_TOUCHMOUSE",
 					"-DHAVE_MATERIALUI",
-					"-DHAVE_OVERLAY",
 					"$(inherited)",
 				);
 				"OTHER_CFLAGS[sdk=iphoneos*]" = (
@@ -1664,7 +1663,6 @@
 					"-DHAVE_IOS_SWIFT",
 					"-DHAVE_IOS_TOUCHMOUSE",
 					"-DHAVE_MATERIALUI",
-					"-DHAVE_OVERLAY",
 				);
 				"OTHER_CFLAGS[sdk=iphoneos*]" = (
 					"-DHAVE_VULKAN",
@@ -2082,7 +2080,8 @@
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
-					"-DHAVE_OPENGLES2",
+					"-DHAVE_OPENGLES3",
+					"-DHAVE_OVERLAY",
 					"-DHAVE_OZONE",
 					"-DHAVE_PATCH",
 					"-DHAVE_RBMP",
@@ -2106,6 +2105,7 @@
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_UPDATE_CORE_INFO",
 					"-DHAVE_VIDEO_FILTER",
+					"-DHAVE_XDELTA",
 					"-DHAVE_XMB",
 					"-DHAVE_ZLIB",
 					"-DINLINE=inline",
@@ -2140,6 +2140,10 @@
 				ENABLE_BITCODE = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_OPTIMIZATION_LEVEL = 2;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					NDEBUG,
+					"NS_BLOCK_ASSERTIONS=1",
+				);
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
@@ -2199,7 +2203,8 @@
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
-					"-DHAVE_OPENGLES2",
+					"-DHAVE_OPENGLES3",
+					"-DHAVE_OVERLAY",
 					"-DHAVE_OZONE",
 					"-DHAVE_PATCH",
 					"-DHAVE_RBMP",
@@ -2223,12 +2228,11 @@
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_UPDATE_CORE_INFO",
 					"-DHAVE_VIDEO_FILTER",
+					"-DHAVE_XDELTA",
 					"-DHAVE_XMB",
 					"-DHAVE_ZLIB",
 					"-DINLINE=inline",
 					"-DIOS",
-					"-DNDEBUG",
-					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DRARCH_INTERNAL",
 					"-DRARCH_MOBILE",
 					"-DRC_DISABLE_LUA",

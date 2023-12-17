@@ -1292,6 +1292,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Escull el controlador de comandaments que s'usarà."
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "Vídeo"
@@ -1521,10 +1522,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Atura qualsevol filtre de vídeo que estiga processant la CPU."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Permet que la pantalla completa sobrepase la mossa (notch) dels dispositius Android"
-)
 
 /* Settings > Video > CRT SwitchRes */
 

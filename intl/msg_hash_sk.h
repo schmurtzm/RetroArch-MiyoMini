@@ -1420,6 +1420,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Používaný ovládač herného ovládača."
    )
+
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    "Použiť ovládač videa."
@@ -1669,10 +1670,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Zrušiť všetky aktívne videofiltre poháňané CPU."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Povoliť plnú obrazovku naprieč výrezu pre kameru na zariadeniach Android"
-)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -3841,6 +3838,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    "Nepriehľadnosť"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS,
+   "Primárna miniatúra"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
